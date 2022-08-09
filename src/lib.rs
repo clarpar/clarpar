@@ -36,8 +36,8 @@ pub struct RegexOrText {
 }
 
 impl RegexOrText {
-    pub fn new_text(text: &str) -> RegexOrText {
-        let mut result = RegexOrText {
+    pub fn new_text(text: &str) -> Self {
+        let mut result = Self {
             text: String::from(text),
             is_regex: false,
             ..RegexOrText::default()
@@ -48,8 +48,8 @@ impl RegexOrText {
         result
     }
 
-    pub fn new_regex(text: &str) -> RegexOrText {
-        let mut result = RegexOrText {
+    pub fn new_regex(text: &str) -> Self {
+        let mut result = Self {
             text: String::from(text),
             is_regex: true,
             ..RegexOrText::default()
@@ -114,9 +114,9 @@ impl RegexOrText {
 
             self.regex = Some(Regex::new(&self.text).unwrap());
 
-            let mut regexBuilder = RegexBuilder::new(&self.text);
-            regexBuilder.case_insensitive(true);
-            self.case_insensitive_regex = Some(regexBuilder.build().unwrap());
+            let mut regex_builder = RegexBuilder::new(&self.text);
+            regex_builder.case_insensitive(true);
+            self.case_insensitive_regex = Some(regex_builder.build().unwrap());
         } else {
             self.regex = None;
             self.case_insensitive_regex = None;
@@ -143,40 +143,18 @@ impl RegexOrText {
     }
 }
 
-impl RegexOrText {
-    // fn from_string(text: String) -> RegexableString {
-    //     RegexableString {
-    //         text,
-    //         is_regex: false,
-    //     }
-    // }
-
-    // fn from_regex(regex: String) -> RegexableString {
-    //     RegexableString {
-    //         text: regex,
-    //         is_regex: true,
-    //     }
-    // }
-
-    // fn from_slice(slice: &str) -> RegexableString {
-    //     RegexableString {
-    //         text: String::from(slice),
-    //         is_regex: false,
-    //     }
-    // }
-}
-
-pub struct Matcher<O, P> {
+pub type DefaultTagType = usize;
+pub struct Matcher<O = DefaultTagType, P = DefaultTagType> {
     pub name: String,
     pub help: Option<String>,
     pub option_tag: Option<O>,
     pub param_tag: Option<P>,
     // filters
-    pub arg_index: Option<usize>,
-    pub option_index: Option<usize>,
+    pub arg_indices: Option<Vec<usize>>,
+    pub option_indices: Option<Vec<usize>>,
     pub option_codes: Option<Vec<RegexOrText>>,
     pub option_has_value: Option<bool>,
-    pub param_index: Option<usize>,
+    pub param_indices: Option<Vec<usize>>,
     pub value_text: Option<RegexOrText>,
 }
 
@@ -229,6 +207,12 @@ impl<O, P> Matcher<O, P> {
     //     self.value_text = value;
     // }
 
+    pub fn new(name: String) -> Self {
+        Matcher {
+            name,
+            ..Default::default()
+        }
+    }
 
     pub fn matches_option_code(&self, value: &str, case_sensitive: bool) -> bool {
         let option_codes = self.option_codes.as_ref();
@@ -246,6 +230,23 @@ impl<O, P> Matcher<O, P> {
     }
 }
 
+impl<O, P> Default for Matcher<O, P> {
+    fn default() -> Self {
+        Matcher {
+            name: String::from(""),
+            help: None,
+            option_tag: None,
+            param_tag: None,
+            arg_indices: None,
+            option_indices: None,
+            option_codes: None,
+            option_has_value: None,
+            param_indices: None,
+            value_text: None
+        }
+    }
+}
+
 pub type Matchers<O, P> = Vec<Matcher<O, P>>;
 
 pub trait ArgProperties<O, P> {
@@ -257,7 +258,7 @@ pub struct OptionProperties<'a, O, P> {
     pub matcher: &'a Matcher<O, P>,
     pub arg_index: usize,
     pub option_index: usize,
-    pub option_code: String,
+    pub code: String,
     pub value_text: Option<String>,
 }
 
@@ -358,10 +359,7 @@ impl Session {
     }
 }
 
-// pub fn new() -> ParserImp {
-//     ParserImp::new()
-// }
-pub struct Parser<O, P> {
+pub struct Parser<O = DefaultTagType, P = DefaultTagType> {
     quote_char: char,
     option_announcer_chars: Vec<char>,
     option_codes_case_sensitive: bool,
@@ -382,8 +380,8 @@ impl<O, P> Parser<O, P> {
             option_codes_case_sensitive: DEFAULT_OPTION_CODES_CASE_SENSITIVE,
             multi_char_option_code_requires_double_announcer: DEFAULT_MULTI_CHAR_OPTION_CODE_REQUIRES_DOUBLE_ANNOUNCER,
             option_value_announcer_char: DEFAULT_OPTION_VALUE_ANNOUNCER_CHAR,
-            option_value_announcer_is_white_space: DEFAULT_OPTION_VALUE_ANNOUNCER_CHAR.is_whitespace(),
             parse_terminate_chars: DEFAULT_PARSE_TERMINATE_CHARS.to_vec(),
+            option_value_announcer_is_white_space: DEFAULT_OPTION_VALUE_ANNOUNCER_CHAR.is_whitespace(),
             matchers: Matchers::new(),
         }
     }
@@ -470,8 +468,8 @@ impl<O, P> Parser<O, P> {
         &self.matchers
     }
 
-    pub fn add_matcher(&mut self, definition: Matcher<O, P>) {
-        self.matchers.push(definition);
+    pub fn add_matcher(&mut self, value: Matcher<O, P>) {
+        self.matchers.push(value);
     }
 
     pub fn remove_matcher(&mut self, index: usize) {
@@ -537,7 +535,7 @@ impl<O, P> Parser<O, P> {
                         self.create_error(error::Id::OptionNotSpecifiedAtLinePosition, Some(&session.line_len.to_string()))?;
                     }
                     ParseOptionState::InCode => {
-                        session.set_option_code(line, None);
+                        session.set_option_code(line, None)?;
                         let arg = self.process_option(&session, None)?;
                         parsed_args.push(arg);
                     }
@@ -648,7 +646,7 @@ impl<O, P> Parser<O, P> {
                     ParseOptionState::InCode => {
                         let option_value_announced = line_char == self.option_value_announcer_char;
                         if option_value_announced || line_char.is_whitespace() || session.option_termination_chars.contains(&line_char) {
-                            session.set_option_code(line, Some(i));
+                            session.set_option_code(line, Some(i))?;
                             if session.option_code == "" {
                                 self.create_error(error::Id::OptionNotSpecifiedAtLinePosition, Some(&i.to_string()))?;
                             } else {
@@ -755,7 +753,7 @@ impl<O, P> Parser<O, P> {
                 matcher,
                 arg_index: session.arg_count,
                 option_index: session.option_count,
-                option_code: session.option_code.clone(),
+                code: session.option_code.clone(),
                 value_text: optional_value_text.map(String::from)
             };
 
@@ -818,6 +816,19 @@ enum ParamEnum {
 }
 
 fn test() {
-    let parser = Parser::<OptionEnum, ParamEnum>::new();
-    parser.parse("");
+    let mut parser: Parser<OptionEnum> = Parser::new();
+    let mut matcher: Matcher<OptionEnum> = Matcher::new(String::from("x"));
+    matcher.param_tag = Some(1);
+    parser.add_matcher(matcher);
+    let args = parser.parse("").expect("Test fail");
+    for arg in args {
+        match arg {
+            Arg::Option(properties) => {
+                println!("Option code: {}", properties.code);
+            }
+            Arg::Param(properties) => {
+                println!("Param value: {}", properties.value_text);
+            }
+        }
+    }
 }
