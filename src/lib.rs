@@ -250,6 +250,7 @@ pub type Matchers<O, P> = Vec<Matcher<O, P>>;
 
 pub trait ArgProperties<O, P> {
     fn get_matcher(&self) -> &Matcher<O, P>;
+    fn get_line_char_index(&self) -> usize;
     fn get_arg_index(&self) -> usize;
 }
 
@@ -265,6 +266,9 @@ pub struct OptionProperties<'a, O, P> {
 impl<'a, O, P> ArgProperties<O, P> for OptionProperties<'a, O, P> {
     fn get_matcher(&self) -> &Matcher<O, P> {
         self.matcher
+    }
+    fn get_line_char_index(&self) -> usize {
+        self.line_char_index
     }
     fn get_arg_index(&self) -> usize {
         self.arg_index
@@ -282,6 +286,9 @@ pub struct ParamProperties<'a, O, P> {
 impl<'a, O, P> ArgProperties<O, P> for ParamProperties<'a, O, P> {
     fn get_matcher(&self) -> &Matcher<O, P> {
         self.matcher
+    }
+    fn get_line_char_index(&self) -> usize {
+        self.line_char_index
     }
     fn get_arg_index(&self) -> usize {
         self.arg_index
