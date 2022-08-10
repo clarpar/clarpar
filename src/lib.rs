@@ -90,12 +90,11 @@ impl RegexOrText {
 
     pub fn is_match(&self, value: &str, case_sensitive: bool) -> bool {
         if self.is_regex {
-            let optioned_regex_ref: Option<&Regex>;
-            if case_sensitive {
-                optioned_regex_ref = self.regex.as_ref();
+            let optioned_regex_ref = if case_sensitive {
+                self.regex.as_ref()
             } else {
-                optioned_regex_ref = self.case_insensitive_regex.as_ref();
-            }
+                self.case_insensitive_regex.as_ref()
+            };
 
             optioned_regex_ref.unwrap().is_match(value)
         } else {
@@ -123,8 +122,7 @@ impl RegexOrText {
 
             let mut uppercase_text = String::with_capacity(self.text.len());
 
-            let mut iter = self.text.chars();
-            while let Some(char) = iter.next() {
+            for char in self.text.chars() {
                 uppercase_text.push(char);
             }
             self.uppercase_text = Some(self.to_uppercase(&self.text));
@@ -134,8 +132,7 @@ impl RegexOrText {
     fn to_uppercase(&self, value: &str) -> String {
         let mut result = String::with_capacity(self.text.len());
 
-        let mut iter = value.chars();
-        while let Some(char) = iter.next() {
+        for char in value.chars() {
             result.push(char);
         }
 
@@ -151,6 +148,7 @@ pub struct Matcher<O = DefaultTagType, P = DefaultTagType> {
     pub param_tag: Option<P>,
     // filters
     pub arg_indices: Option<Vec<usize>>,
+    pub is_option: Option<bool>,
     pub option_indices: Option<Vec<usize>>,
     pub option_codes: Option<Vec<RegexOrText>>,
     pub option_has_value: Option<bool>,
@@ -238,6 +236,7 @@ impl<O, P> Default for Matcher<O, P> {
             option_tag: None,
             param_tag: None,
             arg_indices: None,
+            is_option: None,
             option_indices: None,
             option_codes: None,
             option_has_value: None,
@@ -345,7 +344,7 @@ impl Session {
                         }
                     } else {
                         if !first_char_is_announcer {
-                            let extra = format!("Arg: {} Option:\"{}\"", self.arg_count.to_string(), raw_option_code);
+                            let extra = format!("Arg: {} Option:\"{}\"", self.arg_count, raw_option_code);
                             let error_text = error::Id::OptionCodeMissingDoubleAnnouncer.to_text(Some(&extra));
                             Err(error_text)
                         } else {
@@ -373,7 +372,7 @@ pub struct Parser<O = DefaultTagType, P = DefaultTagType> {
 }
 
 impl<O, P> Parser<O, P> {
-    pub fn new() -> Parser<O, P> {
+    pub fn new() -> Self {
         Parser {
             quote_char: DEFAULT_QUOTE_CHAR,
             option_announcer_chars: DEFAULT_OPTION_ANNOUNCER_CHARS.to_vec(),
@@ -384,6 +383,12 @@ impl<O, P> Parser<O, P> {
             option_value_announcer_is_white_space: DEFAULT_OPTION_VALUE_ANNOUNCER_CHAR.is_whitespace(),
             matchers: Matchers::new(),
         }
+    }
+}
+
+impl<O, P> Default for Parser<O, P> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -606,7 +611,7 @@ impl<O, P> Parser<O, P> {
                     if !line_char.is_whitespace() {
                         session.value_bldr.push(line_char);
                     } else {
-                        let parsed_arg = self.process_param(&session)?;
+                        let parsed_arg = self.process_param(session)?;
                         optional_parsed_arg = Some(parsed_arg);
                         session.parse_state = ParseState::NotInArg;
                     }
@@ -625,7 +630,7 @@ impl<O, P> Parser<O, P> {
                     session.parse_state = ParseState::InParam;
                 } else {
                     if line_char.is_whitespace() {
-                        let parsed_arg = self.process_param(&session)?;
+                        let parsed_arg = self.process_param(session)?;
                         optional_parsed_arg = Some(parsed_arg);
                         session.parse_state = ParseState::NotInArg;
                     } else {
@@ -647,7 +652,7 @@ impl<O, P> Parser<O, P> {
                         let option_value_announced = line_char == self.option_value_announcer_char;
                         if option_value_announced || line_char.is_whitespace() || session.option_termination_chars.contains(&line_char) {
                             session.set_option_code(line, Some(i))?;
-                            if session.option_code == "" {
+                            if session.option_code.is_empty() {
                                 self.create_error(error::Id::OptionNotSpecifiedAtLinePosition, Some(&i.to_string()))?;
                             } else {
                                 if option_value_announced {
@@ -669,7 +674,7 @@ impl<O, P> Parser<O, P> {
                             if
                                 !self.option_announcer_chars.contains(&line_char) // not a new option
                                 &&
-                                self.can_option_have_value(&session) // option can have values
+                                self.can_option_have_value(session) // option can have values
                             {
                                 session.parse_option_state = ParseOptionState::ValueAnnounced;
                                 return self.process_char(session, line, i, line_char); // process first char of value
@@ -747,8 +752,8 @@ impl<O, P> Parser<O, P> {
     }
 
     fn process_option(&self, session: &Session, optional_value_text: Option<&str>) -> Result<Arg<O, P>, String> {
-        let optional_matcher = self.matchers.iter().find(|&matcher| self.try_match_option(session, optional_value_text, matcher));
-        if let Some(matcher) = optional_matcher {
+        let optioned_matcher = self.try_find_option_matcher(session, optional_value_text, false);
+        if let Some(matcher) = optioned_matcher {
             let properties = OptionProperties {
                 matcher,
                 arg_index: session.arg_count,
@@ -764,8 +769,35 @@ impl<O, P> Parser<O, P> {
         }
     }
 
-    fn try_match_option(&self, session: &Session, value_text: Option<&str>, matcher: &Matcher<O, P>) -> bool {
-        false
+    fn try_find_option_matcher(&self, session: &Session, value_text: Option<&str>, match_can_have_value: bool) -> Option<&Matcher<O, P>> {
+        self.matchers.iter().find(|&matcher| self.try_match_option(session, value_text, match_can_have_value, matcher))
+    }
+
+    fn try_match_option(&self, session: &Session, value_text: Option<&str>, match_can_have_value: bool, matcher: &Matcher<O, P>) -> bool {
+        if  self.try_match_index(&session.arg_count, &matcher.arg_indices)
+            &&
+            self.try_match_bool(true, matcher.is_option)
+            &&
+            self.try_match_index(&session.option_count, &matcher.option_indices)
+            &&
+            self.try_match_option_code(&session.option_code, &matcher.option_codes)
+        {
+            if match_can_have_value {
+                matcher.option_has_value.unwrap_or(true)
+            } else {
+                if let Some(unwrapped_matcher_option_has_value) = matcher.option_has_value {
+                    if unwrapped_matcher_option_has_value {
+                        self.try_match_optioned_value_text(value_text, &matcher.value_text)
+                    } else {
+                        value_text.is_none()
+                    }
+                } else {
+                    self.try_match_optioned_value_text(value_text, &matcher.value_text)
+                }
+            }
+        } else {
+            false
+        }
     }
 
     fn process_param(&self, session: &Session) -> Result<Arg<O, P>, String> {
@@ -787,7 +819,56 @@ impl<O, P> Parser<O, P> {
 
 
     fn try_match_param(&self, session: &Session, matcher: &Matcher<O, P>) -> bool {
-        false
+        self.try_match_index(&session.arg_count, &matcher.arg_indices)
+        &&
+        self.try_match_bool(false, matcher.is_option)
+        &&
+        self.try_match_value_text(&session.value_bldr, &matcher.value_text)
+    }
+
+    fn try_match_index(&self, index: &usize, matcher_indices: &Option<Vec<usize>>) -> bool {
+        if let Some(unwrapped_matcher_indices) = matcher_indices {
+            unwrapped_matcher_indices.contains(index)
+        } else {
+            true
+        }
+    }
+
+    fn try_match_bool(&self, value: bool, matcher_value: Option<bool>) -> bool {
+        if let Some(unwrapped_matcher_value) = matcher_value {
+            unwrapped_matcher_value == value
+        } else {
+            true
+        }
+    }
+
+    fn try_match_option_code(&self, code: &str, matcher_codes: &Option<Vec<RegexOrText>>) -> bool {
+        if let Some(unwrapped_matcher_codes) = matcher_codes {
+            for matcher_code in unwrapped_matcher_codes {
+                if matcher_code.is_match(code, self.option_codes_case_sensitive) {
+                    return true;
+                }
+            }
+            false
+        } else {
+            true
+        }
+    }
+
+    fn try_match_value_text(&self, value_text: &str, matcher_value_text: &Option<RegexOrText>) -> bool {
+        if let Some(matcher_value_text) = matcher_value_text {
+            matcher_value_text.is_match(value_text, self.option_codes_case_sensitive)
+        } else {
+            true
+        }
+    }
+
+    fn try_match_optioned_value_text(&self, value_text: Option<&str>, matcher_value_text: &Option<RegexOrText>) -> bool {
+        if let Some(unwrapped_value_text) = value_text {
+            self.try_match_value_text(unwrapped_value_text, matcher_value_text)
+        } else {
+            true
+        }
     }
 
     fn create_error(&self, error_id: error::Id, extra: Option<&str>) -> Result<Arg<O, P>, String> {
@@ -796,39 +877,8 @@ impl<O, P> Parser<O, P> {
     }
 
     fn can_option_have_value(&self, session: &Session) -> bool {
-        for matcher in &self.matchers {
-            if matcher.matches_option_code(&session.option_code, self.option_codes_case_sensitive) {
-                return matcher.option_has_value.unwrap_or(true)
-            }
-        }
-        true
+        let optioned_matcher = self.try_find_option_matcher(session, None, true);
+        optioned_matcher.is_some()
     }
 
-}
-
-enum OptionEnum {
-    A,
-    B,
-}
-enum ParamEnum {
-    X,
-    Y,
-}
-
-fn test() {
-    let mut parser: Parser<OptionEnum> = Parser::new();
-    let mut matcher: Matcher<OptionEnum> = Matcher::new(String::from("x"));
-    matcher.param_tag = Some(1);
-    parser.add_matcher(matcher);
-    let args = parser.parse("").expect("Test fail");
-    for arg in args {
-        match arg {
-            Arg::Option(properties) => {
-                println!("Option code: {}", properties.code);
-            }
-            Arg::Param(properties) => {
-                println!("Param value: {}", properties.value_text);
-            }
-        }
-    }
 }
