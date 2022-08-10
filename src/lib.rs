@@ -255,6 +255,7 @@ pub trait ArgProperties<O, P> {
 
 pub struct OptionProperties<'a, O, P> {
     pub matcher: &'a Matcher<O, P>,
+    pub line_char_index: usize,
     pub arg_index: usize,
     pub option_index: usize,
     pub code: String,
@@ -272,6 +273,7 @@ impl<'a, O, P> ArgProperties<O, P> for OptionProperties<'a, O, P> {
 
 pub struct ParamProperties<'a, O, P> {
     pub matcher: &'a Matcher<O, P>,
+    pub line_char_index: usize,
     pub arg_index: usize,
     pub param_index: usize,
     pub value_text: String,
@@ -302,9 +304,9 @@ struct Session {
     multi_char_option_code_requires_double_announcer: bool,
     option_termination_chars: Vec<char>,
     line_len: usize,
-    text_param_idx: usize,
     parse_state: ParseState,
     parse_option_state: ParseOptionState,
+    arg_line_char_idx: usize,
     start_idx: usize,
     option_announcer_char: char,
     option_code: String,
@@ -485,9 +487,9 @@ impl<O, P> Parser<O, P> {
         let mut session = Session {
             multi_char_option_code_requires_double_announcer: self.multi_char_option_code_requires_double_announcer,
             line_len: line.chars().count(),
-            text_param_idx: 0, // -1
             parse_state: ParseState::NotInArg,
             parse_option_state: ParseOptionState::Announced,
+            arg_line_char_idx: 0,
             start_idx: 0, // -1
             option_announcer_char: '\0',
             option_code: String::from(""),
@@ -524,13 +526,13 @@ impl<O, P> Parser<O, P> {
                 if session.value_quoted {
                     self.create_error(error::Id::TextMissingClosingQuoteCharacter, None)?;
                 } else {
-                    let arg = self.process_param(&session)?;
+                    let arg = self.process_param(&mut session)?;
                     parsed_args.push(arg);
                 }
             }
 
             ParseState::InParamPossibleEndQuote => {
-                let arg = self.process_param(&session)?;
+                let arg = self.process_param(&mut session)?;
                 parsed_args.push(arg);
             }
 
@@ -541,27 +543,27 @@ impl<O, P> Parser<O, P> {
                     }
                     ParseOptionState::InCode => {
                         session.set_option_code(line, None)?;
-                        let arg = self.process_option(&session, None)?;
+                        let arg = self.process_option(&mut session, false)?;
                         parsed_args.push(arg);
                     }
                     ParseOptionState::ValuePossible => {
-                        let arg = self.process_option(&session, None)?;
+                        let arg = self.process_option(&mut session, false)?;
                         parsed_args.push(arg);
                     }
                     ParseOptionState::ValueAnnounced => {
-                        let arg = self.process_option(&session,  Some(""))?;
+                        let arg = self.process_option(&mut session,  true)?;
                         parsed_args.push(arg);
                     }
                     ParseOptionState::InValue => {
                         if session.value_quoted {
                             self.create_error(error::Id::OptionMissingClosingQuoteCharacter, Some(&session.option_code))?;
                         } else {
-                            let arg = self.process_option(&session, None)?;
+                            let arg = self.process_option(&mut session, false)?;
                             parsed_args.push(arg);
                         }
                     }
                     ParseOptionState::InValuePossibleEndQuote => {
-                        let arg = self.process_option(&session, None)?;
+                        let arg = self.process_option(&mut session, false)?;
                         parsed_args.push(arg);
                     }
                 }
@@ -571,7 +573,7 @@ impl<O, P> Parser<O, P> {
         Ok(parsed_args)
     }
 
-    fn process_char(&self, session: &mut Session, line: &str, i: usize, line_char: char) -> Result<ProcessCharResult<O, P>, String> {
+    fn process_char(&self, session: &mut Session, line: &str, char_idx: usize, line_char: char) -> Result<ProcessCharResult<O, P>, String> {
         let mut ignore_rest_of_line = false;
         let mut optional_parsed_arg: Option<Arg<O, P>> = None;
 
@@ -579,8 +581,8 @@ impl<O, P> Parser<O, P> {
             ParseState::NotInArg => {
                 if line_char == self.quote_char {
                     session.parse_state = ParseState::InParam;
-                    session.text_param_idx += 1;
-                    session.start_idx = i;
+                    session.arg_line_char_idx = char_idx;
+                    session.start_idx = char_idx;
                     session.value_bldr.clear();
                     session.value_quoted = true;
                 } else {
@@ -588,15 +590,16 @@ impl<O, P> Parser<O, P> {
                         session.parse_state = ParseState::InOption;
                         session.parse_option_state = ParseOptionState::Announced;
                         session.option_announcer_char = line_char;
-                        session.start_idx = i + 1;
+                        session.arg_line_char_idx = char_idx;
+                        session.start_idx = char_idx + 1;
                     } else {
                         if self.parse_terminate_chars.contains(&line_char) {
                             ignore_rest_of_line = true;
                         } else {
                             if !line_char.is_whitespace() {
                                 session.parse_state = ParseState::InParam;
-                                session.text_param_idx += 1;
-                                session.start_idx = i;
+                                session.arg_line_char_idx = char_idx;
+                                session.start_idx = char_idx;
                                 session.value_bldr.clear();
                                 session.value_bldr.push(line_char);
                                 session.value_quoted = false;
@@ -643,7 +646,7 @@ impl<O, P> Parser<O, P> {
                 match session.parse_option_state {
                     ParseOptionState::Announced => {
                         if line_char.is_whitespace() || session.option_termination_chars.contains(&line_char) {
-                            self.create_error(error::Id::OptionNotSpecifiedAtLinePosition, Some(&i.to_string()))?;
+                            self.create_error(error::Id::OptionNotSpecifiedAtLinePosition, Some(&char_idx.to_string()))?;
                         } else {
                             session.parse_option_state = ParseOptionState::InCode;
                         }
@@ -651,9 +654,9 @@ impl<O, P> Parser<O, P> {
                     ParseOptionState::InCode => {
                         let option_value_announced = line_char == self.option_value_announcer_char;
                         if option_value_announced || line_char.is_whitespace() || session.option_termination_chars.contains(&line_char) {
-                            session.set_option_code(line, Some(i))?;
+                            session.set_option_code(line, Some(char_idx))?;
                             if session.option_code.is_empty() {
-                                self.create_error(error::Id::OptionNotSpecifiedAtLinePosition, Some(&i.to_string()))?;
+                                self.create_error(error::Id::OptionNotSpecifiedAtLinePosition, Some(&char_idx.to_string()))?;
                             } else {
                                 if option_value_announced {
                                     if self.option_value_announcer_is_white_space {
@@ -662,7 +665,7 @@ impl<O, P> Parser<O, P> {
                                         session.parse_option_state = ParseOptionState::ValueAnnounced;
                                     }
                                 } else {
-                                    let parsed_arg = self.process_option(session, None)?;
+                                    let parsed_arg = self.process_option(session, false)?;
                                     optional_parsed_arg = Some(parsed_arg);
                                     session.parse_state = ParseState::NotInArg;
                                 }
@@ -677,21 +680,21 @@ impl<O, P> Parser<O, P> {
                                 self.can_option_have_value(session) // option can have values
                             {
                                 session.parse_option_state = ParseOptionState::ValueAnnounced;
-                                return self.process_char(session, line, i, line_char); // process first char of value
+                                return self.process_char(session, line, char_idx, line_char); // process first char of value
                             } else {
-                                let parsed_arg = self.process_option(session, None)?; // process current option
+                                let parsed_arg = self.process_option(session, false)?; // process current option
                                 optional_parsed_arg = Some(parsed_arg);
                                 session.parse_state = ParseState::NotInArg;
-                                let process_char_result = self.process_char(session, line, i, line_char)?; // will handle new option/text param
+                                let process_char_result = self.process_char(session, line, char_idx, line_char)?; // will handle new option/text param
                                 ignore_rest_of_line = process_char_result.ignore_rest_of_line; // only ignore_rest_of_line could have changed
                             }
                         }
                     }
                     ParseOptionState::ValueAnnounced => {
-                        session.start_idx = i;
+                        session.start_idx = char_idx;
                         session.value_bldr.clear();
                         if line_char.is_whitespace() {
-                            let parsed_arg = self.process_option(session, Some(""))?;
+                            let parsed_arg = self.process_option(session, true)?;
                             optional_parsed_arg = Some(parsed_arg);
                             session.parse_state = ParseState::NotInArg;
                         } else {
@@ -709,7 +712,7 @@ impl<O, P> Parser<O, P> {
                             if !line_char.is_whitespace() {
                                 session.value_bldr.push(line_char);
                             } else {
-                                let parsed_arg = self.process_option(session, Some(&session.value_bldr))?;
+                                let parsed_arg = self.process_option(session, true)?;
                                 optional_parsed_arg = Some(parsed_arg);
                                 session.parse_state = ParseState::NotInArg;
                             }
@@ -727,7 +730,7 @@ impl<O, P> Parser<O, P> {
                             session.parse_option_state = ParseOptionState::InValue;
                         } else {
                             if line_char.is_whitespace() {
-                                let parsed_arg = self.process_option(session, Some(&session.value_bldr))?;
+                                let parsed_arg = self.process_option(session, true)?;
                                 optional_parsed_arg = Some(parsed_arg);
                                 session.parse_state = ParseState::NotInArg;
                             } else {
@@ -751,16 +754,30 @@ impl<O, P> Parser<O, P> {
         result
     }
 
-    fn process_option(&self, session: &Session, optional_value_text: Option<&str>) -> Result<Arg<O, P>, String> {
-        let optioned_matcher = self.try_find_option_matcher(session, optional_value_text, false);
+    fn can_option_have_value(&self, session: &Session) -> bool {
+        let optioned_matcher = self.try_find_option_matcher(session, None);
+        optioned_matcher.is_some()
+    }
+
+    fn process_option(&self, session: &mut Session, has_value: bool) -> Result<Arg<O, P>, String> {
+        let optioned_matcher = self.try_find_option_matcher(session, Some(has_value));
         if let Some(matcher) = optioned_matcher {
+            let value_text = if has_value {
+                Some(session.value_bldr.clone())
+            } else {
+                None
+            };
             let properties = OptionProperties {
                 matcher,
+                line_char_index: session.arg_line_char_idx,
                 arg_index: session.arg_count,
                 option_index: session.option_count,
                 code: session.option_code.clone(),
-                value_text: optional_value_text.map(String::from)
+                value_text
             };
+
+            session.arg_count += 1;
+            session.option_count += 1;
 
             let option_arg = Arg::Option(properties);
             Ok(option_arg)
@@ -769,11 +786,11 @@ impl<O, P> Parser<O, P> {
         }
     }
 
-    fn try_find_option_matcher(&self, session: &Session, value_text: Option<&str>, match_can_have_value: bool) -> Option<&Matcher<O, P>> {
-        self.matchers.iter().find(|&matcher| self.try_match_option(session, value_text, match_can_have_value, matcher))
+    fn try_find_option_matcher(&self, session: &Session, has_value: Option<bool>) -> Option<&Matcher<O, P>> {
+        self.matchers.iter().find(|&matcher| self.try_match_option(session, has_value, matcher))
     }
 
-    fn try_match_option(&self, session: &Session, value_text: Option<&str>, match_can_have_value: bool, matcher: &Matcher<O, P>) -> bool {
+    fn try_match_option(&self, session: &Session, has_value: Option<bool>, matcher: &Matcher<O, P>) -> bool {
         if  self.try_match_index(&session.arg_count, &matcher.arg_indices)
             &&
             self.try_match_bool(true, matcher.is_option)
@@ -782,33 +799,68 @@ impl<O, P> Parser<O, P> {
             &&
             self.try_match_option_code(&session.option_code, &matcher.option_codes)
         {
-            if match_can_have_value {
-                matcher.option_has_value.unwrap_or(true)
-            } else {
+            if let Some(unwrapped_has_value) = has_value {
+                // want to match value
                 if let Some(unwrapped_matcher_option_has_value) = matcher.option_has_value {
+                    // matcher explicitly specifies whether option should have value
                     if unwrapped_matcher_option_has_value {
-                        self.try_match_optioned_value_text(value_text, &matcher.value_text)
+                        // matcher expects value
+                        if unwrapped_has_value {
+                            // option has value - try match
+                            self.try_match_value_text(&session.value_bldr, &matcher.value_text)
+                        } else {
+                            // option does not have value
+                            false
+                        }
                     } else {
-                        value_text.is_none()
+                        // option does not expect value - return false if has value
+                        !unwrapped_has_value
                     }
                 } else {
-                    self.try_match_optioned_value_text(value_text, &matcher.value_text)
+                    // matcher specifies that option either can or cannot have value
+                    if unwrapped_has_value {
+                        // option has value - try match
+                        self.try_match_value_text(&session.value_bldr, &matcher.value_text)
+                    } else {
+                        // option does not have value
+                        true
+                    }
                 }
+            } else {
+                // only want to check if option can have value
+                matcher.option_has_value.unwrap_or(true)
             }
+            // if match_can_have_value {
+            //     matcher.option_has_value.unwrap_or(true)
+            // } else {
+            //     if let Some(unwrapped_matcher_option_has_value) = matcher.option_has_value {
+            //         if unwrapped_matcher_option_has_value {
+            //             self.try_match_optioned_value_text(value_text, &matcher.value_text)
+            //         } else {
+            //             value_text.is_none()
+            //         }
+            //     } else {
+            //         self.try_match_optioned_value_text(value_text, &matcher.value_text)
+            //     }
+            // }
         } else {
             false
         }
     }
 
-    fn process_param(&self, session: &Session) -> Result<Arg<O, P>, String> {
+    fn process_param(&self, session: &mut Session) -> Result<Arg<O, P>, String> {
         let optional_matcher = self.matchers.iter().find(|&matcher| self.try_match_param(session, matcher));
         if let Some(matcher) = optional_matcher {
             let properties = ParamProperties {
                 matcher,
+                line_char_index: session.arg_line_char_idx,
                 arg_index: session.arg_count,
                 param_index: session.param_count,
                 value_text: session.value_bldr.clone(),
             };
+
+            session.arg_count += 1;
+            session.param_count += 1;
 
             let param_arg = Arg::Param(properties);
             Ok(param_arg)
@@ -863,22 +915,9 @@ impl<O, P> Parser<O, P> {
         }
     }
 
-    fn try_match_optioned_value_text(&self, value_text: Option<&str>, matcher_value_text: &Option<RegexOrText>) -> bool {
-        if let Some(unwrapped_value_text) = value_text {
-            self.try_match_value_text(unwrapped_value_text, matcher_value_text)
-        } else {
-            true
-        }
-    }
-
     fn create_error(&self, error_id: error::Id, extra: Option<&str>) -> Result<Arg<O, P>, String> {
         let error_text = error_id.to_text(extra);
         Err(error_text)
-    }
-
-    fn can_option_have_value(&self, session: &Session) -> bool {
-        let optioned_matcher = self.try_find_option_matcher(session, None, true);
-        optioned_matcher.is_some()
     }
 
 }
