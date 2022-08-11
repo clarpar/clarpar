@@ -16,6 +16,7 @@ fn first() {
     matcher.param_tag = Some(1);
     parser.add_matcher(matcher);
     let args = parser.parse("-o").expect("Test fail");
+    println!("Arg count: {}", args.len());
     for arg in args {
         match arg {
             Arg::Option(properties) => {

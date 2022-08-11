@@ -378,6 +378,7 @@ pub struct Parser<O = DefaultTagType, P = DefaultTagType> {
     option_value_announcer_is_white_space: bool,
 
     matchers: Matchers<O, P>,
+    fallback_matcher: Option<Matcher<O, P>>,
 }
 
 impl<O, P> Parser<O, P> {
@@ -391,6 +392,7 @@ impl<O, P> Parser<O, P> {
             parse_terminate_chars: DEFAULT_PARSE_TERMINATE_CHARS.to_vec(),
             option_value_announcer_is_white_space: DEFAULT_OPTION_VALUE_ANNOUNCER_CHAR.is_whitespace(),
             matchers: Matchers::new(),
+            fallback_matcher: Some(Matcher::new(String::from(""))),
         }
     }
 }
@@ -508,13 +510,13 @@ impl<O, P> Parser<O, P> {
             param_count: 0,
         };
 
-        let mut parsed_args: Args<O, P> = Vec::new();
+        let mut args: Args<O, P> = Vec::new();
 
         let mut char_idx = 0;
         for char in line.chars() {
             let process_char_result = self.process_char(&mut session, line, char_idx, char)?;
             if let Some(parsed_arg) = process_char_result.parsed_arg {
-                parsed_args.push(parsed_arg);
+                args.push(parsed_arg);
             }
 
             if process_char_result.ignore_rest_of_line {
@@ -534,13 +536,13 @@ impl<O, P> Parser<O, P> {
                     self.create_error(error::Id::TextMissingClosingQuoteCharacter, None)?;
                 } else {
                     let arg = self.process_param(&mut session)?;
-                    parsed_args.push(arg);
+                    args.push(arg);
                 }
             }
 
             ParseState::InParamPossibleEndQuote => {
                 let arg = self.process_param(&mut session)?;
-                parsed_args.push(arg);
+                args.push(arg);
             }
 
             ParseState::InOption => {
@@ -551,33 +553,33 @@ impl<O, P> Parser<O, P> {
                     ParseOptionState::InCode => {
                         session.set_option_code(line, None)?;
                         let arg = self.process_option(&mut session, false)?;
-                        parsed_args.push(arg);
+                        args.push(arg);
                     }
                     ParseOptionState::ValuePossible => {
                         let arg = self.process_option(&mut session, false)?;
-                        parsed_args.push(arg);
+                        args.push(arg);
                     }
                     ParseOptionState::ValueAnnounced => {
                         let arg = self.process_option(&mut session,  true)?;
-                        parsed_args.push(arg);
+                        args.push(arg);
                     }
                     ParseOptionState::InValue => {
                         if session.value_quoted {
                             self.create_error(error::Id::OptionMissingClosingQuoteCharacter, Some(&session.option_code))?;
                         } else {
                             let arg = self.process_option(&mut session, false)?;
-                            parsed_args.push(arg);
+                            args.push(arg);
                         }
                     }
                     ParseOptionState::InValuePossibleEndQuote => {
                         let arg = self.process_option(&mut session, false)?;
-                        parsed_args.push(arg);
+                        args.push(arg);
                     }
                 }
             }
         }
 
-        Ok(parsed_args)
+        Ok(args)
     }
 
     fn process_char(&self, session: &mut Session, line: &str, char_idx: usize, line_char: char) -> Result<ProcessCharResult<O, P>, String> {
@@ -794,7 +796,11 @@ impl<O, P> Parser<O, P> {
     }
 
     fn try_find_option_matcher(&self, session: &Session, has_value: Option<bool>) -> Option<&Matcher<O, P>> {
-        self.matchers.iter().find(|&matcher| self.try_match_option(session, has_value, matcher))
+        if self.matchers.is_empty() {
+            self.fallback_matcher.as_ref()
+        } else {
+            self.matchers.iter().find(|&matcher| self.try_match_option(session, has_value, matcher))
+        }
     }
 
     fn try_match_option(&self, session: &Session, has_value: Option<bool>, matcher: &Matcher<O, P>) -> bool {
@@ -856,8 +862,13 @@ impl<O, P> Parser<O, P> {
     }
 
     fn process_param(&self, session: &mut Session) -> Result<Arg<O, P>, String> {
-        let optional_matcher = self.matchers.iter().find(|&matcher| self.try_match_param(session, matcher));
-        if let Some(matcher) = optional_matcher {
+        let optioned_matcher = if self.matchers.is_empty() {
+            self.fallback_matcher.as_ref()
+        } else {
+            self.matchers.iter().find(|&matcher| self.try_match_param(session, matcher))
+        };
+
+        if let Some(matcher) = optioned_matcher {
             let properties = ParamProperties {
                 matcher,
                 line_char_index: session.arg_line_char_idx,
