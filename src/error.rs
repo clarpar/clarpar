@@ -1,4 +1,4 @@
-pub enum Id {
+pub enum Error {
     InvalidQuoteCharacterInTextParameter,
     OptionNotSpecifiedAtLinePosition,
     InvalidQuoteCharacterInOptionValue,
@@ -10,7 +10,7 @@ pub enum Id {
     UnmatchedParam,
 }
 
-impl Id {
+impl Error {
     pub fn to_text(&self, optional_extra: Option<&str>) -> String {
         let error_text = self.get_default_text();
         let mut result = String::from(error_text);
@@ -23,15 +23,15 @@ impl Id {
 
     fn get_default_text(&self) -> &str {
         match self {
-            Id::InvalidQuoteCharacterInTextParameter => "todo",
-            Id::OptionNotSpecifiedAtLinePosition => "todo",
-            Id::InvalidQuoteCharacterInOptionValue => "todo",
-            Id::TextMissingClosingQuoteCharacter => "todo",
-            Id::OptionMissingClosingQuoteCharacter => "todo",
-            Id::ZeroLengthOptionCode => "Zero length option code",
-            Id::OptionCodeMissingDoubleAnnouncer => "Option code missing double announcer",
-            Id::UnmatchedOption => "Option not matched",
-            Id::UnmatchedParam => "Parameter not matched",
+            Error::InvalidQuoteCharacterInTextParameter => "todo",
+            Error::OptionNotSpecifiedAtLinePosition => "todo",
+            Error::InvalidQuoteCharacterInOptionValue => "todo",
+            Error::TextMissingClosingQuoteCharacter => "todo",
+            Error::OptionMissingClosingQuoteCharacter => "todo",
+            Error::ZeroLengthOptionCode => "Zero length option code",
+            Error::OptionCodeMissingDoubleAnnouncer => "Option code missing double announcer",
+            Error::UnmatchedOption => "Option not matched",
+            Error::UnmatchedParam => "Parameter not matched",
         }
     }
 }

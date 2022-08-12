@@ -3,13 +3,13 @@ use clarpar::{Parser, Matcher, Arg};
 #[test]
 fn first() {
     enum OptionEnum {
-        A,
-        B,
+        // A,
+        // B,
     }
-    enum ParamEnum {
-        X,
-        Y,
-    }
+    // enum ParamEnum {
+    //     X,
+    //     Y,
+    // }
 
     let mut parser: Parser<OptionEnum> = Parser::new();
     let mut matcher: Matcher<OptionEnum> = Matcher::new(String::from("x"));
