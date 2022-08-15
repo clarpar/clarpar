@@ -1,12 +1,12 @@
 use crate::matcher::{Matcher};
 
-pub trait ArgProperties<O, P> {
+pub trait ArgProperties<O: Default, P: Default> {
     fn get_matcher(&self) -> &Matcher<O, P>;
     fn get_line_char_index(&self) -> usize;
     fn get_arg_index(&self) -> usize;
 }
 
-pub struct OptionProperties<'a, O, P> {
+pub struct OptionProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
     pub line_char_index: usize,
     pub arg_index: usize,
@@ -15,7 +15,7 @@ pub struct OptionProperties<'a, O, P> {
     pub value_text: Option<String>,
 }
 
-impl<'a, O, P> ArgProperties<O, P> for OptionProperties<'a, O, P> {
+impl<'a, O: Default, P: Default> ArgProperties<O, P> for OptionProperties<'a, O, P> {
     fn get_matcher(&self) -> &Matcher<O, P> {
         self.matcher
     }
@@ -27,7 +27,7 @@ impl<'a, O, P> ArgProperties<O, P> for OptionProperties<'a, O, P> {
     }
 }
 
-pub struct ParamProperties<'a, O, P> {
+pub struct ParamProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
     pub line_char_index: usize,
     pub arg_index: usize,
@@ -35,7 +35,7 @@ pub struct ParamProperties<'a, O, P> {
     pub value_text: String,
 }
 
-impl<'a, O, P> ArgProperties<O, P> for ParamProperties<'a, O, P> {
+impl<'a, O: Default, P: Default> ArgProperties<O, P> for ParamProperties<'a, O, P> {
     fn get_matcher(&self) -> &Matcher<O, P> {
         self.matcher
     }
@@ -47,7 +47,7 @@ impl<'a, O, P> ArgProperties<O, P> for ParamProperties<'a, O, P> {
     }
 }
 
-pub enum Arg<'a, O, P> {
+pub enum Arg<'a, O: Default, P: Default> {
     Param(ParamProperties<'a, O, P>),
     Option(OptionProperties<'a, O, P>),
 }

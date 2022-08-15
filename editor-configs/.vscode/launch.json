@@ -7,16 +7,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'clarpar'",
+            "name": "Debug unit tests in library 'parmacl'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=clarpar"
+                    "--package=parmacl"
                 ],
                 "filter": {
-                    "name": "clarpar",
+                    "name": "parmacl",
                     "kind": "lib"
                 }
             },
@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'clarpar'",
+            "name": "Debug executable 'parmacl'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=clarpar",
-                    "--package=clarpar"
+                    "--bin=parmacl",
+                    "--package=parmacl"
                 ],
                 "filter": {
-                    "name": "clarpar",
+                    "name": "parmacl",
                     "kind": "bin"
                 }
             },
@@ -44,16 +44,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'clarpar'",
+            "name": "Debug unit tests in executable 'parmacl'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=clarpar",
-                    "--package=clarpar"
+                    "--bin=parmacl",
+                    "--package=parmacl"
                 ],
                 "filter": {
-                    "name": "clarpar",
+                    "name": "parmacl",
                     "kind": "bin"
                 }
             },
@@ -69,7 +69,7 @@
                     "test",
                     "--no-run",
                     "--test=integration_test",
-                    "--package=clarpar"
+                    "--package=parmacl"
                 ],
                 "filter": {
                     "name": "integration_test",

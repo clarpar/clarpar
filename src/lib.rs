@@ -10,6 +10,8 @@ pub mod matcher;
 pub mod arg;
 pub mod parser;
 
+mod parse_state;
+
 pub use error::{
     Error,
 };
@@ -24,7 +26,6 @@ pub use matcher:: {
     DefaultTagType,
     OptionHasValue,
     DEFAULT_OPTION_HAS_VALUE,
-    OPTION_VALUE_CAN_START_WITH_ANNOUNCER_CHAR,
 };
 
 pub use arg::{
@@ -47,7 +48,7 @@ pub use parser::{
     DEFAULT_OPTION_VALUES_CAN_START_WITH_OPTION_ANNOUNCER_CHAR,
     DEFAULT_PARAMS_CASE_SENSITIVE,
     DEFAULT_PARAMS_CAN_START_WITH_OPTION_ANNOUNCER_CHAR,
-    DEFAULT_EMBED_QUOTE_CHAR_METHOD,
+    DEFAULT_EMBED_QUOTE_CHAR_WITH_DOUBLE,
     DEFAULT_ESCAPE_CHAR,
     DEFAULT_PARSE_TERMINATE_CHARS,
 };
