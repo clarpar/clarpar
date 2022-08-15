@@ -20,6 +20,8 @@ pub(crate) enum OptionParseState {
 }
 
 pub(crate) struct ParseState {
+    pub(crate) quoting_active: bool,
+    pub(crate) quote_char: char,
     pub(crate) multi_char_option_code_requires_double_announcer: bool,
     pub(crate) option_termination_chars: Vec<char>,
     pub(crate) line_len: usize,
