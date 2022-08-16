@@ -1,7 +1,7 @@
 use crate::error::Error;
 use crate::regex_or_text::{RegexOrText};
 use crate::arg::{Arg, Args, OptionProperties, ParamProperties};
-use crate::matcher::{Matcher, Matchers, OptionHasValue, DefaultTagType, DEFAULT_OPTION_HAS_VALUE, OptionOrParam};
+use crate::matcher::{Matcher, Matchers, OptionHasValue, DefaultTagType, DEFAULT_OPTION_HAS_VALUE, ArgType};
 use crate::parse_state::{ParseState, ArgParseState, OptionParseState};
 
 pub const DEFAULT_QUOTE_CHAR: Option<char> = Some('"');
@@ -735,7 +735,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn try_match_option_excluding_value(&self, parse_state: &ParseState, matcher: &Matcher<O, P>) -> bool {
         self.try_match_index(&parse_state.arg_count, &matcher.arg_indices)
         &&
-        self.try_match_option_or_parameter(OptionOrParam::Option, &matcher.option_or_param)
+        self.try_match_arg_type(ArgType::Option, &matcher.arg_type)
         &&
         self.try_match_index(&parse_state.option_count, &matcher.option_indices)
         &&
@@ -745,7 +745,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn try_match_param(&self, parse_state: &ParseState, matcher: &Matcher<O, P>) -> bool {
         self.try_match_index(&parse_state.arg_count, &matcher.arg_indices)
         &&
-        self.try_match_option_or_parameter(OptionOrParam::Param, &matcher.option_or_param)
+        self.try_match_arg_type(ArgType::Param, &matcher.arg_type)
         &&
         self.try_match_index(&parse_state.param_count, &matcher.param_indices)
         &&
@@ -760,7 +760,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
     }
 
-    fn try_match_option_or_parameter(&self, value: OptionOrParam, matcher_value: &Option<OptionOrParam>) -> bool {
+    fn try_match_arg_type(&self, value: ArgType, matcher_value: &Option<ArgType>) -> bool {
         if let Some(unwrapped_matcher_value) = matcher_value {
             *unwrapped_matcher_value == value 
         } else {

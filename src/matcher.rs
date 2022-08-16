@@ -30,7 +30,7 @@ pub enum OptionHasValue {
 
 /// Specifies whether an argument is an option or a parameter.
 #[derive(PartialEq, Eq)]
-pub enum OptionOrParam {
+pub enum ArgType {
     Option,
     Param,
 }
@@ -64,7 +64,7 @@ pub struct Matcher<O: Default = DefaultTagType, P: Default = DefaultTagType> {
     /// Optionally specifies the argument indices one of which an argument needs to be at.
     pub arg_indices: Option<Vec<usize>>,
     /// Optionally specifies an argument is an option or parameter.
-    pub option_or_param: Option<OptionOrParam>,
+    pub arg_type: Option<ArgType>,
     /// Optionally specifies the option indices one of which an option needs to be at.
     pub option_indices: Option<Vec<usize>>,
     /// Optionally specifies the possible codes one of which an option needs to be equal to.
@@ -88,7 +88,7 @@ impl<O: Default, P: Default> Matcher<O, P> {
     pub fn new_option(name: String) -> Self {
         Matcher {
             name,
-            option_or_param: Some(OptionOrParam::Option),
+            arg_type: Some(ArgType::Option),
             ..Default::default()
         }
     }
@@ -96,7 +96,7 @@ impl<O: Default, P: Default> Matcher<O, P> {
     pub fn new_param(name: String) -> Self {
         Matcher {
             name,
-            option_or_param: Some(OptionOrParam::Param),
+            arg_type: Some(ArgType::Param),
             ..Default::default()
         }
     }
@@ -110,7 +110,7 @@ impl<O: Default, P: Default> Default for Matcher<O, P> {
             option_tag: O::default(),
             param_tag: P::default(),
             arg_indices: None,
-            option_or_param: None,
+            arg_type: None,
             option_indices: None,
             option_codes: None,
             option_has_value: None,

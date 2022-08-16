@@ -25,7 +25,7 @@ pub use matcher:: {
     Matchers,
     DefaultTagType,
     OptionHasValue,
-    OptionOrParam,
+    ArgType,
     DEFAULT_OPTION_HAS_VALUE,
 };
 
