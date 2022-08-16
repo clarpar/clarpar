@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{ErrorId, Error};
 use crate::regex_or_text::{RegexOrText};
 use crate::arg::{Arg, Args, OptionProperties, ParamProperties};
 use crate::matcher::{Matcher, Matchers, OptionHasValue, DefaultTagType, DEFAULT_OPTION_HAS_VALUE, ArgType};
@@ -115,7 +115,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         self.matchers.clear();
     }
 
-    pub fn parse(&self, line: &str) -> Result<Args<O, P>, String> {
+    pub fn parse(&self, line: &str) -> Result<Args<O, P>, Error> {
         let mut args = Vec::new();
 
         let quoting_active = self.quote_char.is_some();
@@ -127,7 +127,7 @@ impl<O: Default, P: Default> Parser<O, P> {
             line_len: line.chars().count(),
             arg_parse_state: ArgParseState::NotInArg,
             option_parse_state: OptionParseState::Announced,
-            arg_line_char_idx: 0,
+            line_char_idx: 0,
             start_idx: 0, // -1
             option_announcer_char: '\0',
             option_code: String::from(""),
@@ -160,7 +160,7 @@ impl<O: Default, P: Default> Parser<O, P> {
 
             ArgParseState::InParam => {
                 if parse_state.value_quoted {
-                    self.create_error(Error::ParamMissingClosingQuoteCharacter, None)?;
+                    Err(parse_state.create_param_error(ErrorId::ParamMissingClosingQuoteCharacter))?;
                 } else {
                     self.match_param_arg(&mut parse_state, &mut args)?;
                 }
@@ -171,13 +171,13 @@ impl<O: Default, P: Default> Parser<O, P> {
             }
 
             ArgParseState::InParamEscaped => {
-                self.create_error(Error::InvalidEscapedCharacterInParam, Some(&parse_state.option_code))?;
+                Err(parse_state.create_param_error(ErrorId::InvalidEscapedCharacterInParam))?;
             }
 
             ArgParseState::InOption => {
                 match parse_state.option_parse_state {
                     OptionParseState::Announced => {
-                        self.create_error(Error::NoCodeAfterOptionAnnouncer, Some(&parse_state.line_len.to_string()))?;
+                        Err(parse_state.create_option_error(ErrorId::NoCodeAfterOptionAnnouncer))?;
                     }
                     OptionParseState::InCode => {
                         parse_state.set_option_code(line, None)?;
@@ -187,7 +187,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         let has_value = self.can_option_have_value_with_first_char(&parse_state, false)?;
                         match has_value {
                             OptionHasValueBasedOnFirstChar::Must => {
-                                self.create_error(Error::NoMatchSupportsValueForOptionCode, Some(&parse_state.option_code))?;
+                                Err(parse_state.create_option_error(ErrorId::NoMatchSupportsValueForOptionCode))?;
                             }
                             OptionHasValueBasedOnFirstChar::Possibly => {
                                 parse_state.current_option_value_may_be_param = false;
@@ -201,7 +201,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                     }
                     OptionParseState::InValue => {
                         if parse_state.value_quoted {
-                            self.create_error(Error::OptionValueMissingClosingQuoteCharacter, Some(&parse_state.option_code))?;
+                            Err(parse_state.create_option_error(ErrorId::OptionValueMissingClosingQuoteCharacter))?;
                         } else {
                             self.match_option_arg(&mut parse_state, true, &mut args)?;
                         }
@@ -210,7 +210,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         self.match_option_arg(&mut parse_state, true, &mut args)?;
                     }
                     OptionParseState::InValueEscaped => {
-                        self.create_error(Error::InvalidEscapedCharacterInOptionValue, Some(&parse_state.option_code))?;
+                        Err(parse_state.create_option_error(ErrorId::InvalidEscapedCharacterInOptionValue))?;
                     }
                 }
             }
@@ -219,14 +219,14 @@ impl<O: Default, P: Default> Parser<O, P> {
         Ok(args)
     }
 
-    fn process_char<'a>(&'a self, parse_state: &mut ParseState, line: &str, char_idx: usize, line_char: char, args: &mut Args<'a, O, P>) -> Result<bool, String> {
+    fn process_char<'a>(&'a self, parse_state: &mut ParseState, line: &str, char_idx: usize, line_char: char, args: &mut Args<'a, O, P>) -> Result<bool, Error> {
         let mut more = true;
 
         match parse_state.arg_parse_state {
             ArgParseState::NotInArg => {
                 if parse_state.quoting_active && line_char == parse_state.quote_char {
                     parse_state.arg_parse_state = ArgParseState::InParam;
-                    parse_state.arg_line_char_idx = char_idx;
+                    parse_state.line_char_idx = char_idx;
                     parse_state.start_idx = char_idx;
                     parse_state.value_bldr.clear();
                     parse_state.value_quoted = true;
@@ -235,7 +235,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         parse_state.arg_parse_state = ArgParseState::InOption;
                         parse_state.option_parse_state = OptionParseState::Announced;
                         parse_state.option_announcer_char = line_char;
-                        parse_state.arg_line_char_idx = char_idx;
+                        parse_state.line_char_idx = char_idx;
                         parse_state.start_idx = char_idx + 1;
                     } else {
                         if self.parse_terminate_chars.contains(&line_char) {
@@ -243,7 +243,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         } else {
                             if !line_char.is_whitespace() {
                                 parse_state.arg_parse_state = ArgParseState::InParam;
-                                parse_state.arg_line_char_idx = char_idx;
+                                parse_state.line_char_idx = char_idx;
                                 parse_state.start_idx = char_idx;
                                 parse_state.value_bldr.clear();
                                 parse_state.value_bldr.push(line_char);
@@ -288,7 +288,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         self.match_param_arg(parse_state, args)?;
                         parse_state.arg_parse_state = ArgParseState::NotInArg;
                     } else {
-                        self.create_error(Error::QuotedParamNotFollowedByWhitespaceChar, Some(&parse_state.value_bldr))?;
+                        Err(parse_state.create_param_error(ErrorId::QuotedParamNotFollowedByWhitespaceChar))?;
                     }
                 }
             }
@@ -323,7 +323,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                 match parse_state.option_parse_state {
                     OptionParseState::Announced => {
                         if line_char.is_whitespace() || parse_state.option_termination_chars.contains(&line_char) {
-                            self.create_error(Error::NoCodeAfterOptionAnnouncer, Some(&char_idx.to_string()))?;
+                            Err(parse_state.create_option_error(ErrorId::NoCodeAfterOptionAnnouncer))?;
                         } else {
                             parse_state.option_parse_state = OptionParseState::InCode;
                         }
@@ -334,7 +334,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         if option_value_announced || line_char_is_whitespace || parse_state.option_termination_chars.contains(&line_char) {
                             parse_state.set_option_code(line, Some(char_idx))?;
                             if parse_state.option_code.is_empty() {
-                                self.create_error(Error::NoCodeAfterOptionAnnouncer, Some(&char_idx.to_string()))?;
+                                Err(parse_state.create_option_error(ErrorId::NoCodeAfterOptionAnnouncer))?;
                             } else {
                                 if option_value_announced {
                                     parse_state.option_value_announcer_is_ambiguous = line_char_is_whitespace;
@@ -346,7 +346,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                                             self.match_option_arg(parse_state, false, args)?;
                                             parse_state.arg_parse_state = ArgParseState::NotInArg;
                                         } else {
-                                            self.create_error(Error::NoMatchSupportsValueForOptionCode, Some(&parse_state.option_code))?;
+                                            Err(parse_state.create_option_error(ErrorId::NoMatchSupportsValueForOptionCode))?;
                                         }
                                     }
                                 } else {
@@ -412,7 +412,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                                 self.match_option_arg(parse_state, true, args)?;
                                 parse_state.arg_parse_state = ArgParseState::NotInArg;
                             } else {
-                                self.create_error(Error::QuotedOptionValueNotFollowedByWhitespaceChar, Some(&parse_state.option_code))?;
+                                Err(parse_state.create_option_error(ErrorId::QuotedOptionValueNotFollowedByWhitespaceChar))?;
                             }
                         }
                     }
@@ -448,7 +448,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         Ok(more)
     }
 
-    fn begin_parsing_option_value<'a>(&'a self, parse_state: &mut ParseState, line: &str, char_idx: usize, line_char: char, args: &mut Args<'a, O, P>) -> Result<bool, String> {
+    fn begin_parsing_option_value<'a>(&'a self, parse_state: &mut ParseState, line: &str, char_idx: usize, line_char: char, args: &mut Args<'a, O, P>) -> Result<bool, Error> {
         parse_state.value_bldr.clear();
         parse_state.value_quoted = false;
         parse_state.option_parse_state = OptionParseState::InValue;
@@ -488,7 +488,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
     }
 
-    fn can_option_have_value_with_first_char(&self, parse_state: &ParseState, first_char_of_value_is_option_announcer: bool) -> Result<OptionHasValueBasedOnFirstChar, String> {
+    fn can_option_have_value_with_first_char(&self, parse_state: &ParseState, first_char_of_value_is_option_announcer: bool) -> Result<OptionHasValueBasedOnFirstChar, Error> {
         let mut has_value: OptionHasValueBasedOnFirstChar;
         if self.matchers.is_empty() {
             self.can_option_have_value_with_first_char_with_matcher(parse_state, first_char_of_value_is_option_announcer, &self.fallback_matcher)
@@ -509,13 +509,13 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn can_option_have_value_with_first_char_with_matcher(&self, parse_state: &ParseState,
         first_char_of_value_is_option_announcer: bool,
         matcher: &Matcher<O, P>
-    ) -> Result<OptionHasValueBasedOnFirstChar, String> {
+    ) -> Result<OptionHasValueBasedOnFirstChar, Error> {
         if self.try_match_option_excluding_value(parse_state, matcher) {
             let option_has_value = matcher.option_has_value.as_ref().unwrap_or(&DEFAULT_OPTION_HAS_VALUE);
             match *option_has_value {
                 OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer => {
                     if first_char_of_value_is_option_announcer {
-                        Err(Error::OptionValueCannotBeginWithOptionAnnouncer.to_text(Some(&parse_state.option_code)))
+                        Err(parse_state.create_option_error(ErrorId::OptionValueCannotBeginWithOptionAnnouncer))
                     } else {
                         Ok(OptionHasValueBasedOnFirstChar::Must)
                     }
@@ -532,7 +532,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         }
                     } else {
                         if first_char_of_value_is_option_announcer {
-                            Err(Error::OptionValueCannotBeginWithOptionAnnouncer.to_text(Some(&parse_state.option_code)))
+                            Err(parse_state.create_option_error(ErrorId::OptionValueCannotBeginWithOptionAnnouncer))
                         } else {
                             Ok(OptionHasValueBasedOnFirstChar::Must)
                         }
@@ -597,7 +597,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     //     }
     // }
 
-    fn match_option_arg<'a>(&'a self, parse_state: &mut ParseState, has_value: bool, args: &mut Args<'a, O, P>) -> Result<(), String> {
+    fn match_option_arg<'a>(&'a self, parse_state: &mut ParseState, has_value: bool, args: &mut Args<'a, O, P>) -> Result<(), Error> {
         let mut optioned_matcher = self.try_find_option_matcher(parse_state, has_value);
         if let Some(matcher) = optioned_matcher {
             self.add_option_arg(parse_state, has_value, matcher, args);
@@ -612,10 +612,10 @@ impl<O: Default, P: Default> Parser<O, P> {
                     self.match_param_arg(parse_state, args)?;
                     Ok(())
                 } else {
-                    self.create_error(Error::UnmatchedOption, Some(&parse_state.option_code))
+                    Err(parse_state.create_option_error(ErrorId::UnmatchedOption))
                 }
             } else {
-                self.create_error(Error::UnmatchedOption, Some(&parse_state.option_code))
+                Err(parse_state.create_option_error(ErrorId::UnmatchedOption))
             }
         }
     }
@@ -628,7 +628,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         };
         let properties = OptionProperties {
             matcher,
-            line_char_index: parse_state.arg_line_char_idx,
+            line_char_index: parse_state.line_char_idx,
             arg_index: parse_state.arg_count,
             option_index: parse_state.option_count,
             code: parse_state.option_code.clone(),
@@ -701,7 +701,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
     }
 
-    fn match_param_arg<'a>(&'a self, parse_state: &mut ParseState, args: &mut Args<'a, O, P>) -> Result<(), String> {
+    fn match_param_arg<'a>(&'a self, parse_state: &mut ParseState, args: &mut Args<'a, O, P>) -> Result<(), Error> {
         let optioned_matcher = if self.matchers.is_empty() {
             Some(&self.fallback_matcher)
         } else {
@@ -712,14 +712,14 @@ impl<O: Default, P: Default> Parser<O, P> {
             self.add_param_arg(parse_state, matcher, args);
             Ok(())
         } else {
-            self.create_error(Error::UnmatchedParam, Some(&parse_state.arg_count.to_string()))
+            Err(parse_state.create_param_error(ErrorId::UnmatchedParam))
         }
     }
 
     fn add_param_arg<'a>(&self, parse_state: &mut ParseState, matcher: &'a Matcher<O, P>, args: &mut Args<'a, O, P>) {
         let properties = ParamProperties {
             matcher,
-            line_char_index: parse_state.arg_line_char_idx,
+            line_char_index: parse_state.line_char_idx,
             arg_index: parse_state.arg_count,
             param_index: parse_state.param_count,
             value_text: parse_state.value_bldr.clone(),
@@ -787,11 +787,6 @@ impl<O: Default, P: Default> Parser<O, P> {
         } else {
             true
         }
-    }
-
-    fn create_error(&self, error_id: Error, extra: Option<&str>) -> Result<(), String> {
-        let error_text = error_id.to_text(extra);
-        Err(error_text)
     }
 }
 

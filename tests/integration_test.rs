@@ -1,4 +1,4 @@
-use parmacl::{Parser, Matcher, Arg, RegexOrText};
+use parmacl::{Parser, Matcher, Arg, RegexOrText, OptionHasValue};
 #[derive(Default)]
 enum OptionEnum {
     #[default] A,
@@ -130,6 +130,7 @@ fn basic_matchers() {
     let mut opt_d_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionD"));
     opt_d_matcher.option_tag = OptionEnum::D;
     opt_d_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("d")]));
+    opt_d_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
     parser.add_matcher(opt_d_matcher);
 
     let mut opt_e_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionE"));

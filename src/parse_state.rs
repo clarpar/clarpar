@@ -1,4 +1,4 @@
-use crate::error;
+use crate::error::{ErrorId, Error};
 
 #[derive(PartialEq, Eq)]
 pub(crate) enum ArgParseState {
@@ -27,7 +27,7 @@ pub(crate) struct ParseState {
     pub(crate) line_len: usize,
     pub(crate) arg_parse_state: ArgParseState,
     pub(crate) option_parse_state: OptionParseState,
-    pub(crate) arg_line_char_idx: usize,
+    pub(crate) line_char_idx: usize,
     pub(crate) start_idx: usize,
     pub(crate) option_announcer_char: char,
     pub(crate) option_code: String,
@@ -41,7 +41,7 @@ pub(crate) struct ParseState {
 }
 
 impl ParseState {
-    pub(crate) fn set_option_code(& mut self, line: &str, optional_ending_index: Option<usize>) -> Result<(), String> {
+    pub(crate) fn set_option_code(& mut self, line: &str, optional_ending_index: Option<usize>) -> Result<(), Error> {
         let ending_index = optional_ending_index.unwrap_or(self.line_len);
         let raw_option_code = &line[self.start_idx..ending_index];
 
@@ -49,8 +49,9 @@ impl ParseState {
         let optional_first_char = raw_option_iterator.next();
         match optional_first_char {
             None => {
-                let error_text = error::Error::ZeroLengthOptionCode.to_text(Some(&self.arg_count.to_string()));
-                Err(error_text)
+                self.option_code = String::from("");
+                let error = self.create_option_error(ErrorId::ZeroLengthOptionCode);
+                Err(error)
             },
             Some(first_char) => {
                 if !self.multi_char_option_code_requires_double_announcer {
@@ -61,24 +62,32 @@ impl ParseState {
                     let announcer_is_one_char_only = raw_option_iterator.next() != None;
                     if announcer_is_one_char_only {
                         if first_char_is_announcer {
-                            let error_text = error::Error::ZeroLengthOptionCode.to_text(Some(&self.arg_count.to_string()));
-                            Err(error_text)
+                            self.option_code = String::from("");
+                            let error = self.create_option_error(ErrorId::ZeroLengthOptionCode);
+                            Err(error)
                         } else {
                             self.option_code = String::from(raw_option_code);
                             Ok(())
                         }
                     } else {
+                        self.option_code = String::from(raw_option_code);
                         if !first_char_is_announcer {
-                            let extra = format!("Arg: {} Option:\"{}\"", self.arg_count, raw_option_code);
-                            let error_text = error::Error::OptionCodeMissingDoubleAnnouncer.to_text(Some(&extra));
-                            Err(error_text)
+                            let error = self.create_option_error(ErrorId::OptionCodeMissingDoubleAnnouncer);
+                            Err(error)
                         } else {
-                            self.option_code = String::from(raw_option_code);
                             Ok(())
                         }
                     }
                 }
             }
         }
+    }
+
+    pub fn create_option_error(&self, error_id: ErrorId) -> Error {
+        Error::new_option(error_id, self.line_char_idx, self.arg_count, self.option_count, &self.option_code)
+    }
+
+    pub fn create_param_error(&self, error_id: ErrorId) -> Error {
+        Error::new_param(error_id, self.line_char_idx, self.arg_count, self.option_count, &self.value_bldr)
     }
 }

@@ -13,7 +13,7 @@ pub mod parser;
 mod parse_state;
 
 pub use error::{
-    Error,
+    ErrorId,
 };
 
 pub use regex_or_text::{
