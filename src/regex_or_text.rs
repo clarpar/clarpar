@@ -92,7 +92,7 @@ impl RegexOrText {
             if case_sensitive {
                 value.eq(&self.text)
             } else {
-                let uppercase_value = self.to_uppercase(value);
+                let uppercase_value = value.to_uppercase();
                 uppercase_value.eq(self.uppercase_text.as_ref().unwrap())
             }
         }
@@ -116,18 +116,8 @@ impl RegexOrText {
             for char in self.text.chars() {
                 uppercase_text.push(char);
             }
-            self.uppercase_text = Some(self.to_uppercase(&self.text));
+            self.uppercase_text = Some(self.text.to_uppercase());
         }
-    }
-
-    fn to_uppercase(&self, value: &str) -> String {
-        let mut result = String::with_capacity(self.text.len());
-
-        for char in value.chars() {
-            result.push(char);
-        }
-
-        result
     }
 }
 

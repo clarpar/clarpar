@@ -28,6 +28,7 @@ pub(crate) struct ParseState {
     pub(crate) arg_parse_state: ArgParseState,
     pub(crate) option_parse_state: OptionParseState,
     pub(crate) line_char_idx: usize,
+    pub(crate) arg_start_line_char_idx: usize,
     pub(crate) option_code_start_line_char_idx: usize,
     pub(crate) option_announcer_char: char,
     pub(crate) option_code: String,
@@ -46,8 +47,8 @@ impl ParseState {
         let raw_option_code = &line[self.option_code_start_line_char_idx..ending_index];
 
         let mut raw_option_iterator = raw_option_code.chars();
-        let optional_first_char = raw_option_iterator.next();
-        match optional_first_char {
+        let optioned_first_char = raw_option_iterator.next();
+        match optioned_first_char {
             None => {
                 self.option_code = String::from("");
                 let error = self.create_option_error(ErrorId::ZeroLengthOptionCode);

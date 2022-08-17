@@ -128,6 +128,7 @@ impl<O: Default, P: Default> Parser<O, P> {
             arg_parse_state: ArgParseState::NotInArg,
             option_parse_state: OptionParseState::Announced,
             line_char_idx: 0,
+            arg_start_line_char_idx: 0,
             option_code_start_line_char_idx: 0,
             option_announcer_char: '\0',
             option_code: String::from(""),
@@ -226,12 +227,14 @@ impl<O: Default, P: Default> Parser<O, P> {
                 if parse_state.quoting_active && line_char == parse_state.quote_char {
                     parse_state.arg_parse_state = ArgParseState::InParam;
                     parse_state.value_bldr.clear();
+                    parse_state.arg_start_line_char_idx = parse_state.line_char_idx;
                     parse_state.value_quoted = true;
                 } else {
                     if self.option_announcer_chars.contains(&line_char) {
                         parse_state.arg_parse_state = ArgParseState::InOption;
                         parse_state.option_parse_state = OptionParseState::Announced;
                         parse_state.option_announcer_char = line_char;
+                        parse_state.arg_start_line_char_idx = parse_state.line_char_idx;
                         parse_state.option_code_start_line_char_idx = parse_state.line_char_idx + 1;
                     } else {
                         if self.parse_terminate_chars.contains(&line_char) {
@@ -241,6 +244,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                                 parse_state.arg_parse_state = ArgParseState::InParam;
                                 parse_state.value_bldr.clear();
                                 parse_state.value_bldr.push(line_char);
+                                parse_state.arg_start_line_char_idx = parse_state.line_char_idx;
                                 parse_state.value_quoted = false;
                             }
                         }
@@ -445,6 +449,9 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn begin_parsing_option_value(&self, parse_state: &mut ParseState, line_char: char) {
         parse_state.value_bldr.clear();
         parse_state.value_quoted = parse_state.quoting_active && line_char == parse_state.quote_char;
+        if !parse_state.value_quoted {
+            parse_state.value_bldr.push(line_char);
+        }
         parse_state.option_parse_state = OptionParseState::InValue;
     }
 
@@ -621,7 +628,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         };
         let properties = OptionProperties {
             matcher,
-            line_char_index: parse_state.line_char_idx,
+            line_char_index: parse_state.arg_start_line_char_idx,
             arg_index: parse_state.arg_count,
             option_index: parse_state.option_count,
             code: parse_state.option_code.clone(),
@@ -712,7 +719,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn add_param_arg<'a>(&self, parse_state: &mut ParseState, matcher: &'a Matcher<O, P>, args: &mut Args<'a, O, P>) {
         let properties = ParamProperties {
             matcher,
-            line_char_index: parse_state.line_char_idx,
+            line_char_index: parse_state.arg_start_line_char_idx,
             arg_index: parse_state.arg_count,
             param_index: parse_state.param_count,
             value_text: parse_state.value_bldr.clone(),
