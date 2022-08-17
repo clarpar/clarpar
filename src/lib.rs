@@ -2,18 +2,21 @@
 //! 
 //! A library which uses matchers to parse a command line
 //! 
+//! This extra
+
 #![allow(clippy::collapsible_else_if)]
 
-pub mod error;
-pub mod regex_or_text;
-pub mod matcher;
-pub mod arg;
-pub mod parser;
+mod error;
+mod regex_or_text;
+mod matcher;
+mod arg;
+mod parser;
 
 mod parse_state;
 
 pub use error::{
     ErrorId,
+    Error,
 };
 
 pub use regex_or_text::{

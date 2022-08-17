@@ -47,25 +47,21 @@ impl Display for ErrorId {
 
 #[derive(Debug)]
 pub struct Error {
-    id: ErrorId,
-    line_char_idx: usize,
-    arg_idx: usize,
-    option_idx: Option<usize>,
-    option_code: Option<String>,
-    param_idx: Option<usize>,
-    param_value_text: Option<String>,
+    pub id: ErrorId,
+    pub line_char_idx: usize,
+    pub arg_idx: usize,
+    pub option_idx: Option<usize>,
+    pub option_code: Option<String>,
+    pub param_idx: Option<usize>,
+    pub param_value_text: Option<String>,
 }
 
 impl Error {
-    pub fn new(id: ErrorId, line_char_idx: usize, arg_idx: usize) -> Self {
-        Self { id, line_char_idx, arg_idx, option_idx: None, option_code: None, param_idx: None, param_value_text: None }
-    }
-
-    pub fn new_option(id: ErrorId, line_char_idx: usize, arg_idx: usize, option_idx: usize, option_code: &str) -> Self {
+    pub (crate) fn new_option(id: ErrorId, line_char_idx: usize, arg_idx: usize, option_idx: usize, option_code: &str) -> Self {
         Self { id, line_char_idx, arg_idx, option_idx: Some(option_idx), option_code: Some(String::from(option_code)), param_idx: None, param_value_text: None }
     }
 
-    pub fn new_param(id: ErrorId, line_char_idx: usize, arg_idx: usize, param_idx: usize, param_value_text: &str) -> Self {
+    pub (crate) fn new_param(id: ErrorId, line_char_idx: usize, arg_idx: usize, param_idx: usize, param_value_text: &str) -> Self {
         Self { id, line_char_idx, arg_idx, option_idx: None, option_code: None, param_idx: Some(param_idx), param_value_text: Some(String::from(param_value_text)) }
     }
 }

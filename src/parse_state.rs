@@ -28,7 +28,7 @@ pub(crate) struct ParseState {
     pub(crate) arg_parse_state: ArgParseState,
     pub(crate) option_parse_state: OptionParseState,
     pub(crate) line_char_idx: usize,
-    pub(crate) start_idx: usize,
+    pub(crate) option_code_start_line_char_idx: usize,
     pub(crate) option_announcer_char: char,
     pub(crate) option_code: String,
     pub(crate) option_value_announcer_is_ambiguous: bool,
@@ -43,7 +43,7 @@ pub(crate) struct ParseState {
 impl ParseState {
     pub(crate) fn set_option_code(& mut self, line: &str, optional_ending_index: Option<usize>) -> Result<(), Error> {
         let ending_index = optional_ending_index.unwrap_or(self.line_len);
-        let raw_option_code = &line[self.start_idx..ending_index];
+        let raw_option_code = &line[self.option_code_start_line_char_idx..ending_index];
 
         let mut raw_option_iterator = raw_option_code.chars();
         let optional_first_char = raw_option_iterator.next();
@@ -81,6 +81,10 @@ impl ParseState {
                 }
             }
         }
+    }
+
+    pub fn increment_line_char_idx(&mut self) {
+        self.line_char_idx += 1;
     }
 
     pub fn create_option_error(&self, error_id: ErrorId) -> Error {

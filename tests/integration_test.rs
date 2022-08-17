@@ -136,6 +136,7 @@ fn basic_matchers() {
     let mut opt_e_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionE"));
     opt_e_matcher.option_tag = OptionEnum::E;
     opt_e_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("E")]));
+    opt_e_matcher.option_has_value = Some(OptionHasValue::AlwaysAndValueCanStartWithOptionAnnouncer);
     parser.add_matcher(opt_e_matcher);
 
     let mut opt_f_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionF"));

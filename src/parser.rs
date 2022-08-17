@@ -128,7 +128,7 @@ impl<O: Default, P: Default> Parser<O, P> {
             arg_parse_state: ArgParseState::NotInArg,
             option_parse_state: OptionParseState::Announced,
             line_char_idx: 0,
-            start_idx: 0, // -1
+            option_code_start_line_char_idx: 0,
             option_announcer_char: '\0',
             option_code: String::from(""),
             option_value_announcer_is_ambiguous: false,
@@ -141,12 +141,11 @@ impl<O: Default, P: Default> Parser<O, P> {
             param_count: 0,
         };
 
-        let mut char_idx = 0;
         for char in line.chars() {
-            let more = self.process_char(& mut parse_state, line, char_idx, char, &mut args)?;
+            let more = self.process_char(& mut parse_state, line, char, &mut args)?;
 
             if more {
-                char_idx += 1;
+                parse_state.increment_line_char_idx();
             } else {
                 // ignore rest of line
                 break;
@@ -219,15 +218,13 @@ impl<O: Default, P: Default> Parser<O, P> {
         Ok(args)
     }
 
-    fn process_char<'a>(&'a self, parse_state: &mut ParseState, line: &str, char_idx: usize, line_char: char, args: &mut Args<'a, O, P>) -> Result<bool, Error> {
+    fn process_char<'a>(&'a self, parse_state: &mut ParseState, line: &str, line_char: char, args: &mut Args<'a, O, P>) -> Result<bool, Error> {
         let mut more = true;
 
         match parse_state.arg_parse_state {
             ArgParseState::NotInArg => {
                 if parse_state.quoting_active && line_char == parse_state.quote_char {
                     parse_state.arg_parse_state = ArgParseState::InParam;
-                    parse_state.line_char_idx = char_idx;
-                    parse_state.start_idx = char_idx;
                     parse_state.value_bldr.clear();
                     parse_state.value_quoted = true;
                 } else {
@@ -235,16 +232,13 @@ impl<O: Default, P: Default> Parser<O, P> {
                         parse_state.arg_parse_state = ArgParseState::InOption;
                         parse_state.option_parse_state = OptionParseState::Announced;
                         parse_state.option_announcer_char = line_char;
-                        parse_state.line_char_idx = char_idx;
-                        parse_state.start_idx = char_idx + 1;
+                        parse_state.option_code_start_line_char_idx = parse_state.line_char_idx + 1;
                     } else {
                         if self.parse_terminate_chars.contains(&line_char) {
                             more = false;
                         } else {
                             if !line_char.is_whitespace() {
                                 parse_state.arg_parse_state = ArgParseState::InParam;
-                                parse_state.line_char_idx = char_idx;
-                                parse_state.start_idx = char_idx;
                                 parse_state.value_bldr.clear();
                                 parse_state.value_bldr.push(line_char);
                                 parse_state.value_quoted = false;
@@ -332,7 +326,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         let option_value_announced = self.option_value_announcer_chars.contains(&line_char);
                         let line_char_is_whitespace = line_char.is_whitespace();
                         if option_value_announced || line_char_is_whitespace || parse_state.option_termination_chars.contains(&line_char) {
-                            parse_state.set_option_code(line, Some(char_idx))?;
+                            parse_state.set_option_code(line, Some(parse_state.line_char_idx))?;
                             if parse_state.option_code.is_empty() {
                                 Err(parse_state.create_option_error(ErrorId::NoCodeAfterOptionAnnouncer))?;
                             } else {
@@ -361,20 +355,20 @@ impl<O: Default, P: Default> Parser<O, P> {
                         if !line_char.is_whitespace() {
                             let first_char_of_value_is_option_announcer = self.option_value_announcer_chars.contains(&line_char);
                             let has_value = self.can_option_have_value_with_first_char(parse_state, first_char_of_value_is_option_announcer)?;
-                            more = match has_value {
+                            match has_value {
                                 OptionHasValueBasedOnFirstChar::Must => {
                                     parse_state.current_option_value_may_be_param = false;
-                                    self.begin_parsing_option_value(parse_state, line, char_idx, line_char, args)?
+                                    self.begin_parsing_option_value(parse_state, line_char);
                                 }
                                 OptionHasValueBasedOnFirstChar::Possibly => {
                                     parse_state.current_option_value_may_be_param = true;
-                                    self.begin_parsing_option_value(parse_state, line, char_idx, line_char, args)?
+                                    self.begin_parsing_option_value(parse_state, line_char);
                                 }
                                 OptionHasValueBasedOnFirstChar::MustNot => {
                                     parse_state.current_option_value_may_be_param = false;
                                     self.match_option_arg(parse_state, false, args)?; // process current option
                                     parse_state.arg_parse_state = ArgParseState::NotInArg;
-                                    self.process_char(parse_state, line, char_idx, line_char, args)? // will handle new option/text param
+                                    more = self.process_char(parse_state, line, line_char, args)? // will handle new option/text param
                                 }
                             }
                         }
@@ -448,11 +442,10 @@ impl<O: Default, P: Default> Parser<O, P> {
         Ok(more)
     }
 
-    fn begin_parsing_option_value<'a>(&'a self, parse_state: &mut ParseState, line: &str, char_idx: usize, line_char: char, args: &mut Args<'a, O, P>) -> Result<bool, Error> {
+    fn begin_parsing_option_value(&self, parse_state: &mut ParseState, line_char: char) {
         parse_state.value_bldr.clear();
-        parse_state.value_quoted = false;
+        parse_state.value_quoted = parse_state.quoting_active && line_char == parse_state.quote_char;
         parse_state.option_parse_state = OptionParseState::InValue;
-        self.process_char(parse_state, line, char_idx, line_char, args)
     }
 
     fn create_option_termination_char_array(&self, quoting_active: bool, quote_char: char) -> Vec<char> {
