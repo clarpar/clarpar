@@ -51,8 +51,7 @@ impl ParseState {
         match optioned_first_char {
             None => {
                 self.option_code = String::from("");
-                let error = self.create_option_error(ErrorId::ZeroLengthOptionCode);
-                Err(error)
+                Ok(())
             },
             Some(first_char) => {
                 if !self.multi_char_option_code_requires_double_announcer {
@@ -64,19 +63,17 @@ impl ParseState {
                     if announcer_is_one_char_only {
                         if first_char_is_announcer {
                             self.option_code = String::from("");
-                            let error = self.create_option_error(ErrorId::ZeroLengthOptionCode);
-                            Err(error)
                         } else {
                             self.option_code = String::from(raw_option_code);
-                            Ok(())
                         }
+                        Ok(())
                     } else {
                         self.option_code = String::from(raw_option_code);
-                        if !first_char_is_announcer {
+                        if first_char_is_announcer {
+                            Ok(())
+                        } else {
                             let error = self.create_option_error(ErrorId::OptionCodeMissingDoubleAnnouncer);
                             Err(error)
-                        } else {
-                            Ok(())
                         }
                     }
                 }

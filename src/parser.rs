@@ -13,7 +13,8 @@ pub const DEFAULT_OPTION_VALUES_CASE_SENSITIVE: bool = false;
 pub const DEFAULT_PARAMS_CASE_SENSITIVE: bool = false;
 pub const DEFAULT_EMBED_QUOTE_CHAR_WITH_DOUBLE: bool = true;
 pub const DEFAULT_ESCAPE_CHAR: Option<char> = None;
-pub const DEFAULT_ONLY_ESCAPE_QUOTE_CHAR_AND_ESCAPE_CHAR: bool = true;
+pub const DEFAULT_ESCAPEABLE_LOGICAL_CHARS: [EscapeableLogicalChar; 2] = [EscapeableLogicalChar::Escape, EscapeableLogicalChar::Quote];
+pub const DEFAULT_ESCAPEABLE_CHARS: [char; 0] = [];
 pub const DEFAULT_PARSE_TERMINATE_CHARS: [char; 3] = ['<', '>', '|'];
 
 pub struct Parser<O: Default = DefaultTagType, P: Default = DefaultTagType> {
@@ -56,7 +57,8 @@ pub struct Parser<O: Default = DefaultTagType, P: Default = DefaultTagType> {
     pub params_case_sensitive: bool,
     pub embed_quote_char_with_double: bool,
     pub escape_char: Option<char>,
-    pub only_escape_quote_char_and_escape_char: bool,
+    pub escapeable_logical_chars: Vec<EscapeableLogicalChar>,
+    pub escapeable_chars: Vec<char>,
     /// An array of characters which terminate the parsing of arguments in the command line.
     /// 
     /// If any of the characters in this array are encountered outside a quoted value, then that character
@@ -82,7 +84,8 @@ impl<O: Default, P: Default> Parser<O, P> {
             params_case_sensitive: DEFAULT_PARAMS_CASE_SENSITIVE,
             embed_quote_char_with_double: DEFAULT_EMBED_QUOTE_CHAR_WITH_DOUBLE,
             escape_char: DEFAULT_ESCAPE_CHAR,
-            only_escape_quote_char_and_escape_char: DEFAULT_ONLY_ESCAPE_QUOTE_CHAR_AND_ESCAPE_CHAR,
+            escapeable_logical_chars: DEFAULT_ESCAPEABLE_LOGICAL_CHARS.to_vec(),
+            escapeable_chars: DEFAULT_ESCAPEABLE_CHARS.to_vec(),
             parse_terminate_chars: DEFAULT_PARSE_TERMINATE_CHARS.to_vec(),
 
             matchers: Matchers::new(),
@@ -171,17 +174,21 @@ impl<O: Default, P: Default> Parser<O, P> {
             }
 
             ArgParseState::InParamEscaped => {
-                Err(parse_state.create_param_error(ErrorId::InvalidEscapedCharacterInParam))?;
+                Err(parse_state.create_param_error(ErrorId::EscapedCharacterInParamCannotBeEscaped))?;
             }
 
             ArgParseState::InOption => {
                 match parse_state.option_parse_state {
                     OptionParseState::Announced => {
-                        Err(parse_state.create_option_error(ErrorId::NoCodeAfterOptionAnnouncer))?;
+                        Err(parse_state.create_option_error(ErrorId::AnnouncedOptionMissingCode))?;
                     }
                     OptionParseState::InCode => {
                         parse_state.set_option_code(line, None)?;
-                        self.match_option_arg(&mut parse_state, false, &mut args)?;
+                        if parse_state.option_code.is_empty() {
+                            Err(parse_state.create_option_error(ErrorId::AnnouncedOptionMissingCode))?;
+                        } else {
+                            self.match_option_arg(&mut parse_state, false, &mut args)?;
+                        }
                     }
                     OptionParseState::WaitOptionValue => {
                         let has_value = self.can_option_have_value_with_first_char(&parse_state, false)?;
@@ -210,7 +217,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         self.match_option_arg(&mut parse_state, true, &mut args)?;
                     }
                     OptionParseState::InValueEscaped => {
-                        Err(parse_state.create_option_error(ErrorId::InvalidEscapedCharacterInOptionValue))?;
+                        Err(parse_state.create_option_error(ErrorId::EscapedCharacterInOptionValueCannotBeEscaped))?;
                     }
                 }
             }
@@ -292,28 +299,11 @@ impl<O: Default, P: Default> Parser<O, P> {
             }
 
             ArgParseState::InParamEscaped => {
-                let char_can_be_escaped: bool;
-                if !self.only_escape_quote_char_and_escape_char {
-                    char_can_be_escaped = true;
-                } else {
-                    if parse_state.quoting_active && line_char == parse_state.quote_char {
-                        char_can_be_escaped = true;
-                    } else {
-                        if let Some(unwrapped_escape_char) = self.escape_char {
-                            if line_char == unwrapped_escape_char {
-                                char_can_be_escaped = true;
-                            } else {
-                                char_can_be_escaped = false;
-                            }
-                        } else {
-                            char_can_be_escaped = false;
-                        }
-                    }
-                }
-
-                if char_can_be_escaped {
+                if self.can_char_be_escaped(parse_state, line_char) {
                     parse_state.value_bldr.push(line_char);
                     parse_state.arg_parse_state = ArgParseState::InParam;
+                } else {
+                    Err(parse_state.create_param_error(ErrorId::EscapedCharacterInParamCannotBeEscaped))?;
                 }
             }
 
@@ -321,7 +311,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                 match parse_state.option_parse_state {
                     OptionParseState::Announced => {
                         if line_char.is_whitespace() || parse_state.option_termination_chars.contains(&line_char) {
-                            Err(parse_state.create_option_error(ErrorId::NoCodeAfterOptionAnnouncer))?;
+                            Err(parse_state.create_option_error(ErrorId::AnnouncedOptionMissingCode))?;
                         } else {
                             parse_state.option_parse_state = OptionParseState::InCode;
                         }
@@ -332,7 +322,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         if option_value_announced || line_char_is_whitespace || parse_state.option_termination_chars.contains(&line_char) {
                             parse_state.set_option_code(line, Some(parse_state.line_char_idx))?;
                             if parse_state.option_code.is_empty() {
-                                Err(parse_state.create_option_error(ErrorId::NoCodeAfterOptionAnnouncer))?;
+                                Err(parse_state.create_option_error(ErrorId::AnnouncedOptionMissingCode))?;
                             } else {
                                 if option_value_announced {
                                     parse_state.option_value_announcer_is_ambiguous = line_char_is_whitespace;
@@ -415,28 +405,11 @@ impl<O: Default, P: Default> Parser<O, P> {
                         }
                     }
                     OptionParseState::InValueEscaped => {
-                        let char_can_be_escaped: bool;
-                        if !self.only_escape_quote_char_and_escape_char {
-                            char_can_be_escaped = true;
-                        } else {
-                            if parse_state.quoting_active && line_char == parse_state.quote_char {
-                                char_can_be_escaped = true;
-                            } else {
-                                if let Some(unwrapped_escape_char) = self.escape_char {
-                                    if line_char == unwrapped_escape_char {
-                                        char_can_be_escaped = true;
-                                    } else {
-                                        char_can_be_escaped = false;
-                                    }
-                                } else {
-                                    char_can_be_escaped = false;
-                                }
-                            }
-                        }
-        
-                        if char_can_be_escaped {
+                        if self.can_char_be_escaped(parse_state, line_char) {
                             parse_state.value_bldr.push(line_char);
                             parse_state.option_parse_state = OptionParseState::InValue;
+                        } else {
+                            Err(parse_state.create_param_error(ErrorId::EscapedCharacterInOptionValueCannotBeEscaped))?;
                         }
                     }
                 }
@@ -444,6 +417,50 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
 
         Ok(more)
+    }
+
+    fn can_char_be_escaped(&self, parse_state: &mut ParseState, line_char: char) -> bool {
+        for escapeable_logical_char in &self.escapeable_logical_chars {
+            match escapeable_logical_char {
+                EscapeableLogicalChar::Escape => {
+                    if let Some(escapeable_char) = self.escape_char {
+                        if escapeable_char == line_char {
+                            return true;
+                        }
+                    }
+                }
+                EscapeableLogicalChar::Quote => {
+                    if parse_state.quoting_active && line_char == parse_state.quote_char {
+                        return true;
+                    }
+                }
+                EscapeableLogicalChar::Whitespace => {
+                    if line_char.is_whitespace() {
+                        return true;
+                    }
+                }
+                EscapeableLogicalChar::OptionAnnouncer => {
+                    if self.option_announcer_chars.contains(&line_char) {
+                        return true;
+                    }
+                }
+                EscapeableLogicalChar::OptionValueAnnouncer => {
+                    if self.option_value_announcer_chars.contains(&line_char) {
+                        return true;
+                    }
+                }
+                EscapeableLogicalChar::All => {
+                    return true;
+                }
+            
+            }
+        }
+        for escapeable_char in &self.escapeable_chars {
+            if *escapeable_char == line_char {
+                return true;
+            }
+        }
+        false
     }
 
     fn begin_parsing_option_value(&self, parse_state: &mut ParseState, line_char: char) {
@@ -788,6 +805,16 @@ impl<O: Default, P: Default> Parser<O, P> {
             true
         }
     }
+}
+
+#[derive(Clone)]
+pub enum EscapeableLogicalChar {
+    Escape,
+    Quote,
+    Whitespace,
+    OptionAnnouncer,
+    OptionValueAnnouncer,
+    All,
 }
 
 enum OptionHasValueBasedOnFirstChar {

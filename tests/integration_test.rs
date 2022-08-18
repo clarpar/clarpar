@@ -8,11 +8,11 @@ enum OptionEnum {
     E,
     F,
     G,
-    HH,
-    II,
-    JJ,
-    KKKK,
-    LL,
+    Hh,
+    Ii,
+    Jj,
+    Kkkk,
+    Ll,
 }
 #[derive(Default)]
 enum ParamEnum {
@@ -176,30 +176,30 @@ fn basic_matchers() {
     parser.add_matcher(opt_g_matcher);
 
     let mut opt_hh_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionHH"));
-    opt_hh_matcher.option_tag = OptionEnum::HH;
+    opt_hh_matcher.option_tag = OptionEnum::Hh;
     opt_hh_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("HH")]));
     parser.add_matcher(opt_hh_matcher);
 
     let mut opt_ii_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionII"));
-    opt_ii_matcher.option_tag = OptionEnum::II;
+    opt_ii_matcher.option_tag = OptionEnum::Ii;
     opt_ii_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("ii")]));
     opt_ii_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
     parser.add_matcher(opt_ii_matcher);
 
     let mut opt_jj_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionJJ"));
-    opt_jj_matcher.option_tag = OptionEnum::JJ;
+    opt_jj_matcher.option_tag = OptionEnum::Jj;
     opt_jj_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("JJ")]));
     opt_jj_matcher.option_has_value = Some(OptionHasValue::AlwaysAndValueCanStartWithOptionAnnouncer);
     parser.add_matcher(opt_jj_matcher);
 
     let mut opt_kkkk_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionKKKK"));
-    opt_kkkk_matcher.option_tag = OptionEnum::KKKK;
+    opt_kkkk_matcher.option_tag = OptionEnum::Kkkk;
     opt_kkkk_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("kkkk")]));
     opt_kkkk_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
     parser.add_matcher(opt_kkkk_matcher);
 
     let mut opt_ll_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionLL"));
-    opt_ll_matcher.option_tag = OptionEnum::LL;
+    opt_ll_matcher.option_tag = OptionEnum::Ll;
     opt_ll_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("LL")]));
     opt_ll_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
     parser.add_matcher(opt_ll_matcher);
@@ -244,57 +244,57 @@ fn basic_matchers() {
                         assert_eq!(properties.arg_index, 9);
                         assert_eq!(properties.option_index, 4);
                         assert_eq!(properties.code, "e");
-                        assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
+                        assert_eq!(properties.value_text, Some(String::from("-valueE1")));
+                        assert_eq!(properties.line_char_index, 72);
                     },
                     OptionEnum::F => {
                         assert_eq!(properties.arg_index, 10);
                         assert_eq!(properties.option_index, 5);
                         assert_eq!(properties.code, "F");
-                        assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
+                        assert_eq!(properties.value_text, Some(String::from("-value F1")));
+                        assert_eq!(properties.line_char_index, 84);
                     },
                     OptionEnum::G => {
                         assert_eq!(properties.arg_index, 11);
                         assert_eq!(properties.option_index, 6);
-                        assert_eq!(properties.code, "G");
-                        assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
+                        assert_eq!(properties.code, "g");
+                        assert_eq!(properties.value_text, Some(String::from("optvalueG1")));
+                        assert_eq!(properties.line_char_index, 99);
                     },
-                    OptionEnum::HH => {
-                        assert_eq!(properties.arg_index, 14);
+                    OptionEnum::Hh => {
+                        assert_eq!(properties.arg_index, 13);
                         assert_eq!(properties.option_index, 7);
-                        assert_eq!(properties.code, "HH");
+                        assert_eq!(properties.code, "hh");
                         assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
+                        assert_eq!(properties.line_char_index, 120);
                     },
-                    OptionEnum::II => {
-                        assert_eq!(properties.arg_index, 15);
+                    OptionEnum::Ii => {
+                        assert_eq!(properties.arg_index, 14);
                         assert_eq!(properties.option_index, 8);
                         assert_eq!(properties.code, "ii");
-                        assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
+                        assert_eq!(properties.value_text, Some(String::from("valueII1")));
+                        assert_eq!(properties.line_char_index, 124);
                     },
-                    OptionEnum::JJ => {
-                        assert_eq!(properties.arg_index, 16);
+                    OptionEnum::Jj => {
+                        assert_eq!(properties.arg_index, 15);
                         assert_eq!(properties.option_index, 9);
                         assert_eq!(properties.code, "JJ");
-                        assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
+                        assert_eq!(properties.value_text, Some(String::from("-optValueJJ1")));
+                        assert_eq!(properties.line_char_index, 137);
                     },
-                    OptionEnum::KKKK => {
-                        assert_eq!(properties.arg_index, 17);
-                        assert_eq!(properties.option_index, 9);
-                        assert_eq!(properties.code, "kkkk");
-                        assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
-                    },
-                    OptionEnum::LL => {
-                        assert_eq!(properties.arg_index, 18);
+                    OptionEnum::Kkkk => {
+                        assert_eq!(properties.arg_index, 16);
                         assert_eq!(properties.option_index, 10);
+                        assert_eq!(properties.code, "kkkk");
+                        assert_eq!(properties.value_text, Some(String::from("valueKKKK1")));
+                        assert_eq!(properties.line_char_index, 154);
+                    },
+                    OptionEnum::Ll => {
+                        assert_eq!(properties.arg_index, 17);
+                        assert_eq!(properties.option_index, 11);
                         assert_eq!(properties.code, "LL");
-                        assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 17);
+                        assert_eq!(properties.value_text, Some(String::from("-optValueLL1")));
+                        assert_eq!(properties.line_char_index, 173);
                     },
                 }
             }
@@ -331,10 +331,10 @@ fn basic_matchers() {
                         assert_eq!(properties.line_char_index, 48);
                     },
                     ParamEnum::Param6 => {
-                        assert_eq!(properties.arg_index, 13);
+                        assert_eq!(properties.arg_index, 12);
                         assert_eq!(properties.param_index, 5);
                         assert_eq!(properties.value_text, "param6");
-                        assert_eq!(properties.line_char_index, 20);
+                        assert_eq!(properties.line_char_index, 113);
                     },
                 }
             }

@@ -13,18 +13,21 @@ pub enum OptionHasValue {
     AlwaysButValueMustNotStartWithOptionAnnouncer,
     /// Option must always include a value. The value may start with an option announcer (normally `-`).
     /// 
-    /// By allowing values to start with an announcer, it allows option values that are numbers which can be negative,
-    /// to be easily specified by users. (They do not have to be enclosed in quotes.)  However users should be clearly
-    /// able to distinguish between such values and other option codes.
+    /// By allowing values to start with an announcer, it allows (for example) option values that are numbers which can
+    /// be negative, to be easily specified by users. (They do not have to be enclosed in quotes.)  However users should
+    /// clearly be able to distinguish between such values and other option codes.
     AlwaysAndValueCanStartWithOptionAnnouncer,
     /// If it is possible for the next argument after the option code to be its value, then
-    /// the matcher treats the option as have a value.  Otherwise it is treated as not
+    /// the matcher treats the option as having a value.  Otherwise it is treated as not
     /// having a value.
     /// 
+    /// This is only possible when a whitespace [option value announcer](crate::Parser::option_value_announcer_chars) is
+    /// used.
+    /// 
     /// To prevent confusion, an option value which begins with an option announcer, cannot be a possible value for an
-    /// option.
+    /// option when `IfPossible` is specified.
     IfPossible,
-    /// Option never has a value.
+    /// Option never has a value. It is used as a flag.
     Never,
 }
 
