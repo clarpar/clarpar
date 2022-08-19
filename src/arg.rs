@@ -1,4 +1,4 @@
-use crate::matcher::{Matcher};
+use crate::matcher::Matcher;
 
 pub trait ArgProperties<O: Default, P: Default> {
     fn get_matcher(&self) -> &Matcher<O, P>;
@@ -47,7 +47,27 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for ParamProperties<'a, O, 
     }
 }
 
+pub struct BinaryProperties<'a, O: Default, P: Default> {
+    pub matcher: &'a Matcher<O, P>,
+    pub line_char_index: usize,
+    pub arg_index: usize,
+    pub value_text: String,
+}
+
+impl<'a, O: Default, P: Default> ArgProperties<O, P> for BinaryProperties<'a, O, P> {
+    fn get_matcher(&self) -> &Matcher<O, P> {
+        self.matcher
+    }
+    fn get_line_char_index(&self) -> usize {
+        self.line_char_index
+    }
+    fn get_arg_index(&self) -> usize {
+        self.arg_index
+    }
+}
+
 pub enum Arg<'a, O: Default, P: Default> {
+    Binary(BinaryProperties<'a, O, P>),
     Param(ParamProperties<'a, O, P>),
     Option(OptionProperties<'a, O, P>),
 }

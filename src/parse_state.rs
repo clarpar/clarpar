@@ -1,8 +1,10 @@
-use crate::error::{ErrorId, Error};
+use crate::parse_error::{ParseError};
+use crate::parse_error_id::{ParseErrorId};
 
 #[derive(PartialEq, Eq)]
 pub(crate) enum ArgParseState {
-    NotInArg,
+    WaitBinary,
+    WaitOptionOrParam,
     InParam,
     InParamPossibleEndQuote,
     InParamEscaped,
@@ -11,7 +13,6 @@ pub(crate) enum ArgParseState {
 
 #[derive(PartialEq, Eq)]
 pub(crate) enum OptionParseState {
-    Announced,
     InCode,
     WaitOptionValue,
     InValue,
@@ -39,10 +40,11 @@ pub(crate) struct ParseState {
     pub(crate) arg_count: usize,
     pub(crate) option_count: usize,
     pub(crate) param_count: usize,
+    pub(crate) current_param_is_binary: bool,
 }
 
 impl ParseState {
-    pub(crate) fn set_option_code(& mut self, line: &str, optional_ending_index: Option<usize>) -> Result<(), Error> {
+    pub(crate) fn set_option_code(& mut self, line: &str, optional_ending_index: Option<usize>) -> Result<(), ParseError> {
         let ending_index = optional_ending_index.unwrap_or(self.line_len);
         let raw_option_code = &line[self.option_code_start_line_char_idx..ending_index];
 
@@ -72,7 +74,7 @@ impl ParseState {
                         if first_char_is_announcer {
                             Ok(())
                         } else {
-                            let error = self.create_option_error(ErrorId::OptionCodeMissingDoubleAnnouncer);
+                            let error = self.create_option_error(ParseErrorId::OptionCodeMissingDoubleAnnouncer);
                             Err(error)
                         }
                     }
@@ -85,11 +87,11 @@ impl ParseState {
         self.line_char_idx += 1;
     }
 
-    pub fn create_option_error(&self, error_id: ErrorId) -> Error {
-        Error::new_option(error_id, self.line_char_idx, self.arg_count, self.option_count, &self.option_code)
+    pub fn create_option_error(&self, error_id: ParseErrorId) -> ParseError {
+        ParseError::new_option(error_id, self.line_char_idx, self.arg_count, self.option_count, &self.option_code)
     }
 
-    pub fn create_param_error(&self, error_id: ErrorId) -> Error {
-        Error::new_param(error_id, self.line_char_idx, self.arg_count, self.option_count, &self.value_bldr)
+    pub fn create_param_error(&self, error_id: ParseErrorId) -> ParseError {
+        ParseError::new_param(error_id, self.line_char_idx, self.arg_count, self.option_count, &self.value_bldr)
     }
 }

@@ -6,7 +6,8 @@
 
 #![allow(clippy::collapsible_else_if)]
 
-mod error;
+mod parse_error_id;
+mod parse_error;
 mod regex_or_text;
 mod matcher;
 mod arg;
@@ -14,9 +15,12 @@ mod parser;
 
 mod parse_state;
 
-pub use error::{
-    ErrorId,
-    Error,
+pub use parse_error_id::{
+    ParseErrorId,
+};
+
+pub use parse_error::{
+    ParseError,
 };
 
 pub use regex_or_text::{
@@ -28,12 +32,13 @@ pub use matcher:: {
     Matchers,
     DefaultTagType,
     OptionHasValue,
-    ArgType,
+    MatchArgType,
     DEFAULT_OPTION_HAS_VALUE,
 };
 
 pub use arg::{
     ArgProperties,
+    BinaryProperties,
     OptionProperties,
     ParamProperties,
     Arg,
@@ -55,4 +60,5 @@ pub use parser::{
     DEFAULT_ESCAPEABLE_LOGICAL_CHARS,
     DEFAULT_ESCAPEABLE_CHARS,
     DEFAULT_PARSE_TERMINATE_CHARS,
+    DEFAULT_FIRST_ARG_IS_BINARY,
 };
