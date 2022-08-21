@@ -4,7 +4,7 @@ use regex::{Regex, RegexBuilder};
 /// Used by to match option codes and values
 /// 
 /// If it contains a text string, then matcher will compare
-#[derive(Default)]
+#[derive(Debug, Default, Clone)]
 pub struct RegexOrText {
     text: String,
     override_case_sensitive: Option<bool>,

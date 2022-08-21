@@ -6,6 +6,7 @@ pub trait ArgProperties<O: Default, P: Default> {
     fn get_arg_index(&self) -> usize;
 }
 
+#[derive(Debug)]
 pub struct OptionProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
     pub line_char_index: usize,
@@ -27,6 +28,7 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for OptionProperties<'a, O,
     }
 }
 
+#[derive(Debug)]
 pub struct ParamProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
     pub line_char_index: usize,
@@ -47,6 +49,7 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for ParamProperties<'a, O, 
     }
 }
 
+#[derive(Debug)]
 pub struct BinaryProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
     pub line_char_index: usize,
@@ -66,6 +69,7 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for BinaryProperties<'a, O,
     }
 }
 
+#[derive(Debug)]
 pub enum Arg<'a, O: Default, P: Default> {
     Binary(BinaryProperties<'a, O, P>),
     Param(ParamProperties<'a, O, P>),

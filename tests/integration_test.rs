@@ -1,4 +1,4 @@
-use parmacl::{Parser, Matcher, Arg, RegexOrText, OptionHasValue};
+use parmacl::{Parser, Arg, RegexOrText, OptionHasValue};
 #[derive(Default)]
 enum OptionEnum {
     #[default] A,
@@ -36,7 +36,7 @@ enum ParamEnum {
 fn no_matchers() {
     const COMMAND_LINE: &str = "binary param1 param2 -a -b param3";
     let parser: Parser = Parser::new();
-    let args = parser.parse(COMMAND_LINE).unwrap();
+    let args = parser.parse_line(COMMAND_LINE).unwrap();
 
     assert_eq!(args.len(), 6);
 
@@ -124,153 +124,157 @@ par\"\"am10 \
 
 #[test]
 fn basic_matchers() {
-    let mut parser: Parser<OptionEnum, ParamEnum> = Parser::new();
     let command_line = String::from(BASIC_MATCHERS_COMMAND_LINE);
 
-    let mut param_1_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param1"));
-    param_1_matcher.param_tag = ParamEnum::Param1;
-    param_1_matcher.param_indices = Some(Vec::from([0]));
-    parser.add_matcher(param_1_matcher);
+    let mut parser: Parser<OptionEnum, ParamEnum> = Parser::new();
 
-    let mut param_2_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param2"));
-    param_2_matcher.param_tag = ParamEnum::Param2;
-    param_2_matcher.param_indices = Some(Vec::from([1]));
-    parser.add_matcher(param_2_matcher);
+    parser
+        .push_new_param_matcher("param1")
+            .set_param_tag(ParamEnum::Param1)
+            .some_param_indices(&[0]);
 
-    let mut param_3_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param3"));
-    param_3_matcher.param_tag = ParamEnum::Param3;
-    param_3_matcher.param_indices = Some(Vec::from([2]));
-    parser.add_matcher(param_3_matcher);
+    parser
+        .push_new_param_matcher("param2")
+            .set_param_tag(ParamEnum::Param2)
+            .some_param_indices(&[1]);
 
-    let mut param_4_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param4"));
-    param_4_matcher.param_tag = ParamEnum::Param4;
-    param_4_matcher.param_indices = Some(Vec::from([3]));
-    parser.add_matcher(param_4_matcher);
+    parser
+        .push_new_param_matcher("param3")
+            .set_param_tag(ParamEnum::Param3)
+            .some_param_indices(&[2]);
 
-    let mut param_5_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param5"));
-    param_5_matcher.param_tag = ParamEnum::Param5;
-    param_5_matcher.param_indices = Some(Vec::from([4]));
-    parser.add_matcher(param_5_matcher);
+    parser
+        .push_new_param_matcher("param4")
+            .set_param_tag(ParamEnum::Param4)
+            .some_param_indices(&[3]);
 
-    let mut param_6_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param6"));
-    param_6_matcher.param_tag = ParamEnum::Param6;
-    param_6_matcher.param_indices = Some(Vec::from([5]));
-    parser.add_matcher(param_6_matcher);
+    parser
+        .push_new_param_matcher("param5")
+            .set_param_tag(ParamEnum::Param5)
+            .some_param_indices(&[4]);
 
-    let mut param_7_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param7"));
-    param_7_matcher.param_tag = ParamEnum::Param7;
-    param_7_matcher.param_indices = Some(Vec::from([6]));
-    parser.add_matcher(param_7_matcher);
+    parser
+        .push_new_param_matcher("param6")
+            .set_param_tag(ParamEnum::Param6)
+            .some_param_indices(&[5]);
 
-    let mut param_8_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param8"));
-    param_8_matcher.param_tag = ParamEnum::Param8;
-    param_8_matcher.param_indices = Some(Vec::from([7]));
-    parser.add_matcher(param_8_matcher);
+    parser
+        .push_new_param_matcher("param7")
+            .set_param_tag(ParamEnum::Param7)
+            .some_param_indices(&[6]);
 
-    let mut param_9_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param9"));
-    param_9_matcher.param_tag = ParamEnum::Param9;
-    param_9_matcher.param_indices = Some(Vec::from([8]));
-    parser.add_matcher(param_9_matcher);
+    parser
+        .push_new_param_matcher("param8")
+            .set_param_tag(ParamEnum::Param8)
+            .some_param_indices(&[7]);
 
-    let mut param_10_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_param(String::from("param10"));
-    param_10_matcher.param_tag = ParamEnum::Param10;
-    param_10_matcher.param_indices = Some(Vec::from([9]));
-    parser.add_matcher(param_10_matcher);
+    parser
+        .push_new_param_matcher("param9")
+            .set_param_tag(ParamEnum::Param9)
+            .some_param_indices(&[8]);
 
-    let mut opt_a_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionA"));
-    opt_a_matcher.option_tag = OptionEnum::A;
-    opt_a_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("a")]));
-    parser.add_matcher(opt_a_matcher);
+    parser
+        .push_new_param_matcher("param10")
+            .set_param_tag(ParamEnum::Param10)
+            .some_param_indices(&[9]);
 
-    let mut opt_b_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionB"));
-    opt_b_matcher.option_tag = OptionEnum::B;
-    opt_b_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("b")]));
-    parser.add_matcher(opt_b_matcher);
+    parser
+        .push_new_option_matcher("optionA")
+            .set_option_tag(OptionEnum::A)
+            .some_option_codes(&[RegexOrText::new_text("a")]);
 
-    let mut opt_c_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionC"));
-    opt_c_matcher.option_tag = OptionEnum::C;
-    opt_c_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("c")]));
-    opt_c_matcher.option_has_value = Some(OptionHasValue::AlwaysAndValueCanStartWithOptionAnnouncer);
-    parser.add_matcher(opt_c_matcher);
+    parser
+        .push_new_option_matcher("optionB")
+            .set_option_tag(OptionEnum::B)
+            .some_option_codes(&[RegexOrText::new_text("b")]);
 
-    let mut opt_d_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionD"));
-    opt_d_matcher.option_tag = OptionEnum::D;
-    opt_d_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("d")]));
-    opt_d_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_d_matcher);
+    parser
+        .push_new_option_matcher("optionC")
+            .set_option_tag(OptionEnum::C)
+            .some_option_codes(&[RegexOrText::new_text("c")])
+            .some_option_has_value(OptionHasValue::Always)
+            .set_option_value_can_start_with_option_announcer(true);
 
-    let mut opt_e_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionE"));
-    opt_e_matcher.option_tag = OptionEnum::E;
-    opt_e_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("E")]));
-    opt_e_matcher.option_has_value = Some(OptionHasValue::AlwaysAndValueCanStartWithOptionAnnouncer);
-    parser.add_matcher(opt_e_matcher);
+    parser
+        .push_new_option_matcher("optionD")
+            .set_option_tag(OptionEnum::D)
+            .some_option_codes(&[RegexOrText::new_text("d")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_f_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionF"));
-    opt_f_matcher.option_tag = OptionEnum::F;
-    opt_f_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("f")]));
-    opt_f_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_f_matcher);
+    parser
+        .push_new_option_matcher("optionE")
+            .set_option_tag(OptionEnum::E)
+            .some_option_codes(&[RegexOrText::new_text("E")])
+            .some_option_has_value(OptionHasValue::Always)
+            .set_option_value_can_start_with_option_announcer(true);
 
-    let mut opt_g_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionG"));
-    opt_g_matcher.option_tag = OptionEnum::G;
-    opt_g_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("g")]));
-    opt_g_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_g_matcher);
+    parser
+        .push_new_option_matcher("optionF")
+            .set_option_tag(OptionEnum::F)
+            .some_option_codes(&[RegexOrText::new_text("f")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_hh_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionHH"));
-    opt_hh_matcher.option_tag = OptionEnum::Hh;
-    opt_hh_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("HH")]));
-    parser.add_matcher(opt_hh_matcher);
+    parser
+        .push_new_option_matcher("optionG")
+            .set_option_tag(OptionEnum::G)
+            .some_option_codes(&[RegexOrText::new_text("g")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_ii_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionII"));
-    opt_ii_matcher.option_tag = OptionEnum::Ii;
-    opt_ii_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("ii")]));
-    opt_ii_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_ii_matcher);
+    parser
+        .push_new_option_matcher("optionHH")
+            .set_option_tag(OptionEnum::Hh)
+            .some_option_codes(&[RegexOrText::new_text("HH")]);
 
-    let mut opt_jj_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionJJ"));
-    opt_jj_matcher.option_tag = OptionEnum::Jj;
-    opt_jj_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("JJ")]));
-    opt_jj_matcher.option_has_value = Some(OptionHasValue::AlwaysAndValueCanStartWithOptionAnnouncer);
-    parser.add_matcher(opt_jj_matcher);
+    parser
+        .push_new_option_matcher("optionII")
+            .set_option_tag(OptionEnum::Ii)
+            .some_option_codes(&[RegexOrText::new_text("ii")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_kkkk_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionKKKK"));
-    opt_kkkk_matcher.option_tag = OptionEnum::Kkkk;
-    opt_kkkk_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("kkkk")]));
-    opt_kkkk_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_kkkk_matcher);
+    parser
+        .push_new_option_matcher("optionJJ")
+            .set_option_tag(OptionEnum::Jj)
+            .some_option_codes(&[RegexOrText::new_text("JJ")])
+            .some_option_has_value(OptionHasValue::Always)
+            .set_option_value_can_start_with_option_announcer(true);
 
-    let mut opt_ll_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionLL"));
-    opt_ll_matcher.option_tag = OptionEnum::Ll;
-    opt_ll_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("LL")]));
-    opt_ll_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_ll_matcher);
+    parser
+        .push_new_option_matcher("optionKKKK")
+            .set_option_tag(OptionEnum::Kkkk)
+            .some_option_codes(&[RegexOrText::new_text("kkkk")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_m_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionM"));
-    opt_m_matcher.option_tag = OptionEnum::M;
-    opt_m_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("m")]));
-    opt_m_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_m_matcher);
+    parser
+        .push_new_option_matcher("optionLL")
+            .set_option_tag(OptionEnum::Ll)
+            .some_option_codes(&[RegexOrText::new_text("LL")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_n_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionN"));
-    opt_n_matcher.option_tag = OptionEnum::N;
-    opt_n_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("n")]));
-    opt_n_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_n_matcher);
+    parser
+        .push_new_option_matcher("optionM")
+            .set_option_tag(OptionEnum::M)
+            .some_option_codes(&[RegexOrText::new_text("m")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_o_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionO"));
-    opt_o_matcher.option_tag = OptionEnum::O;
-    opt_o_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("o")]));
-    opt_o_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_o_matcher);
+    parser
+        .push_new_option_matcher("optionN")
+            .set_option_tag(OptionEnum::N)
+            .some_option_codes(&[RegexOrText::new_text("n")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let mut opt_p_matcher: Matcher<OptionEnum, ParamEnum> = Matcher::new_option(String::from("optionP"));
-    opt_p_matcher.option_tag = OptionEnum::P;
-    opt_p_matcher.option_codes = Some(Vec::from([RegexOrText::new_text("p")]));
-    opt_p_matcher.option_has_value = Some(OptionHasValue::AlwaysButValueMustNotStartWithOptionAnnouncer);
-    parser.add_matcher(opt_p_matcher);
+    parser
+        .push_new_option_matcher("optionO")
+            .set_option_tag(OptionEnum::O)
+            .some_option_codes(&[RegexOrText::new_text("o")])
+            .some_option_has_value(OptionHasValue::Always);
 
-    let args = parser.parse(&command_line).unwrap();
+    parser
+        .push_new_option_matcher("optionP")
+            .set_option_tag(OptionEnum::P)
+            .some_option_codes(&[RegexOrText::new_text("p")])
+            .some_option_has_value(OptionHasValue::Always);
+
+    let args = parser.parse_line(&command_line).unwrap();
 
     assert_eq!(args.len(), 27);
 
@@ -282,7 +286,7 @@ fn basic_matchers() {
                 assert_eq!(properties.line_char_index, 0);
             },
             Arg::Option(properties) => {
-                match properties.matcher.option_tag {
+                match properties.matcher.option_tag() {
                     OptionEnum::A => {
                         assert_eq!(properties.arg_index, 3);
                         assert_eq!(properties.option_index, 0);
@@ -398,7 +402,7 @@ fn basic_matchers() {
                 }
             }
             Arg::Param(properties) => {
-                match properties.matcher.param_tag {
+                match properties.matcher.param_tag() {
                     ParamEnum::Param1 => {
                         assert_eq!(properties.arg_index, 1);
                         assert_eq!(properties.param_index, 0);

@@ -21,16 +21,15 @@ pub(crate) enum OptionParseState {
 }
 
 pub(crate) struct ParseState {
-    pub(crate) quoting_active: bool,
-    pub(crate) quote_char: char,
     pub(crate) multi_char_option_code_requires_double_announcer: bool,
-    pub(crate) option_termination_chars: Vec<char>,
+    pub(crate) line: String,
     pub(crate) line_len: usize,
     pub(crate) arg_parse_state: ArgParseState,
     pub(crate) option_parse_state: OptionParseState,
     pub(crate) line_char_idx: usize,
     pub(crate) arg_start_line_char_idx: usize,
     pub(crate) option_code_start_line_char_idx: usize,
+    pub(crate) arg_quote_char: char,
     pub(crate) option_announcer_char: char,
     pub(crate) option_code: String,
     pub(crate) option_value_announcer_is_ambiguous: bool,
@@ -44,9 +43,37 @@ pub(crate) struct ParseState {
 }
 
 impl ParseState {
-    pub(crate) fn set_option_code(& mut self, line: &str, optional_ending_index: Option<usize>) -> Result<(), ParseError> {
+    pub fn new(
+        line: &str,
+        first_arg_is_binary: bool,
+        multi_char_option_code_requires_double_announcer: bool,
+    ) -> Self {
+        ParseState {
+            multi_char_option_code_requires_double_announcer,
+            line: String::from(line),
+            line_len: line.chars().count(),
+            arg_parse_state: if first_arg_is_binary { ArgParseState::WaitBinary } else { ArgParseState::WaitOptionOrParam },
+            option_parse_state: OptionParseState::InCode,
+            line_char_idx: 0,
+            arg_start_line_char_idx: 0,
+            option_code_start_line_char_idx: 0,
+            arg_quote_char: '\0',
+            option_announcer_char: '\0',
+            option_code: String::from(""),
+            option_value_announcer_is_ambiguous: false,
+            current_option_value_may_be_param: false,
+            value_quoted: false,
+            value_bldr: String::with_capacity(30),
+            arg_count: 0,
+            option_count: 0,
+            param_count: 0,
+            current_param_is_binary: false,
+        }
+    }
+
+    pub(crate) fn set_option_code(& mut self, optional_ending_index: Option<usize>) -> Result<(), ParseError> {
         let ending_index = optional_ending_index.unwrap_or(self.line_len);
-        let raw_option_code = &line[self.option_code_start_line_char_idx..ending_index];
+        let raw_option_code = &self.line[self.option_code_start_line_char_idx..ending_index];
 
         let mut raw_option_iterator = raw_option_code.chars();
         let optioned_first_char = raw_option_iterator.next();
