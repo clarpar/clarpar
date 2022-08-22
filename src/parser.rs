@@ -138,7 +138,7 @@ impl<O: Default, P: Default> Default for Parser<O, P> {
 }
 
 impl<O: Default, P: Default> Parser<O, P> {
-    pub fn quote_chars(&self) -> &Vec<char> {
+    pub fn quote_chars(&self) -> &[char] {
         &self.quote_chars
     }
 
@@ -147,7 +147,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
-    pub fn option_announcer_chars(&self) -> &Vec<char> {
+    pub fn option_announcer_chars(&self) -> &[char] {
         &self.option_announcer_chars
     }
 
@@ -183,7 +183,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
-    pub fn option_value_announcer_chars(&self) -> &Vec<char> {
+    pub fn option_value_announcer_chars(&self) -> &[char] {
         &self.option_value_announcer_chars
     }
 
@@ -238,7 +238,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
-    pub fn escapeable_logical_chars(&self) -> &Vec<EscapeableLogicalChar> {
+    pub fn escapeable_logical_chars(&self) -> &[EscapeableLogicalChar] {
         &self.escapeable_logical_chars
     }
 
@@ -247,7 +247,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
-    pub fn escapeable_chars(&self) -> &Vec<char> {
+    pub fn escapeable_chars(&self) -> &[char] {
         &self.escapeable_chars
     }
 
@@ -265,7 +265,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
-    pub fn parse_terminate_chars(&self) -> &Vec<char> {
+    pub fn parse_terminate_chars(&self) -> &[char] {
         &self.parse_terminate_chars
     }
 

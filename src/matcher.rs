@@ -170,6 +170,14 @@ impl<O: Default, P: Default> Matcher<O, P> {
         &self.arg_indices
     }
 
+    pub fn arg_indices_as_slice(&self) -> &[usize] {
+        if let Some(arg_indices) = self.arg_indices.as_ref() {
+            arg_indices
+        } else {
+            &[]
+        }
+    }
+
     pub fn set_arg_indices(&mut self, value: Option<Vec<usize>>) -> &mut Self {
         self.arg_indices = value;
         self
@@ -208,6 +216,14 @@ impl<O: Default, P: Default> Matcher<O, P> {
         &self.option_indices
     }
 
+    pub fn option_indices_as_slice(&self) -> &[usize] {
+        if let Some(option_indices) = self.option_indices.as_ref() {
+            option_indices
+        } else {
+            &[]
+        }
+    }
+
     pub fn set_option_indices(&mut self, value: Option<Vec<usize>>) -> &mut Self {
         self.option_indices = value;
         self
@@ -225,6 +241,14 @@ impl<O: Default, P: Default> Matcher<O, P> {
 
     pub fn option_codes(&self) -> &Option<Vec<RegexOrText>> {
         &self.option_codes
+    }
+
+    pub fn option_codes_as_slice(&self) -> &[RegexOrText] {
+        if let Some(option_codes) = self.option_codes.as_ref() {
+            option_codes
+        } else {
+            &[]
+        }
     }
 
     pub fn set_option_codes(&mut self, value: Option<Vec<RegexOrText>>) -> &mut Self {
@@ -272,6 +296,14 @@ impl<O: Default, P: Default> Matcher<O, P> {
 
     pub fn param_indices(&self) -> &Option<Vec<usize>> {
         &self.param_indices
+    }
+
+    pub fn param_indices_as_slice(&self) -> &[usize] {
+        if let Some(param_indices) = self.param_indices.as_ref() {
+            param_indices
+        } else {
+            &[]
+        }
     }
 
     pub fn set_param_indices(&mut self, value: Option<Vec<usize>>) -> &mut Self {

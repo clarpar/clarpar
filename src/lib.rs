@@ -22,7 +22,7 @@
 //! ```
 //!use parmacl::{Parser, Arg, RegexOrText, OptionHasValue};
 //!
-//!const LINE: &str = r#"binary name" -a param1 -B optBValue "2nd ""Param""" -c "C OptValue"#;
+//!const LINE: &str = r#""binary name" -a "1st ""Param""" -B optBValue "2nd Param" -c "C OptValue""#;
 //! 
 //!#[derive(Default)]
 //!enum OptionEnum {
@@ -67,7 +67,7 @@
 //! 
 //!let args = parser.parse_line(LINE).unwrap();
 //! 
-//!assert_eq!(args.len(), 5);
+//!assert_eq!(args.len(), 6);
 //! 
 //!for arg in args {
 //!    match arg {
@@ -85,13 +85,13 @@
 //!                    assert_eq!(properties.option_index, 0);
 //!                    assert_eq!(properties.code, "a");
 //!                    assert_eq!(properties.value_text, None);
-//!                    assert_eq!(properties.line_char_index, 28);
+//!                    assert_eq!(properties.line_char_index, 14);
 //!                },
 //!                OptionEnum::B => {
 //!                    // Process option B
 //!                },
 //!                OptionEnum::C => {
-//!                    // Process option B
+//!                    // Process option C
 //!                },
 //!            }
 //!        }
@@ -102,8 +102,8 @@
 //!                    assert_eq!(properties.matcher.name(), "param1");
 //!                    assert_eq!(properties.arg_index, 2);
 //!                    assert_eq!(properties.param_index, 0);
-//!                    assert_eq!(properties.value_text, "param1");
-//!                    assert_eq!(properties.line_char_index, 14);
+//!                    assert_eq!(properties.value_text, "1st \"Param\"");
+//!                    assert_eq!(properties.line_char_index, 17);
 //!                },
 //!                ParamEnum::Param2 => {
 //!                    // Process parameter Param2
