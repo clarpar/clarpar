@@ -63,16 +63,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug integration test 'integration_test'",
+            "name": "Debug integration test 'line_tests'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--test=integration_test",
+                    "--test=line_tests",
                     "--package=parmacl"
                 ],
                 "filter": {
-                    "name": "integration_test",
+                    "name": "line_tests",
                     "kind": "test"
                 }
             },
