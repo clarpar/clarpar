@@ -22,7 +22,7 @@
 //! ```
 //!use parmacl::{Parser, Arg, RegexOrText, OptionHasValue};
 //!
-//!const LINE: &str = r#""binary name" -a "1st ""Param""" -B optBValue "2nd Param" -c "C OptValue""#;
+//!const LINE: &str = r#""binary name" -a "1st ""Param""" -B optValue "param2" -c "C OptValue""#;
 //! 
 //!#[derive(Default)]
 //!enum OptionEnum {
