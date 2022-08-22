@@ -117,13 +117,13 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
     }
 
-    pub fn new_with_line_defaults() -> Self {
+    pub fn with_line_defaults() -> Self {
         let mut parser = Parser::new();
         parser.set_line_defaults();
         parser
     }
 
-    pub fn new_with_env_args_defaults() -> Self {
+    pub fn with_env_args_defaults() -> Self {
         let mut parser = Parser::new();
         parser.set_env_args_defaults();
         parser
@@ -380,15 +380,22 @@ impl<O: Default, P: Default> Parser<O, P> {
                 more = self.process_char(&mut parse_state, EnvChar::Separator, &mut args)?;
 
                 if more {
-                    parse_state.increment_line_char_idx();
+                    parse_state.increment_env_line_approximate_char_idx();
                 }
-            } else {
+            }
+
+            if more {
+                parse_state.env_arg_idx = env_arg_idx;
+                parse_state.line_or_env_arg = env_arg.clone();
+                parse_state.line_or_env_arg_char_idx = 0;
+    
                 for unicode_char in env_arg.chars() {
                     let env_char = EnvChar::Unicode(unicode_char);
                     more = self.process_char(&mut parse_state, env_char, &mut args)?;
 
                     if more {
-                        parse_state.increment_line_char_idx();
+                        parse_state.increment_env_arg_char_idx();
+                        parse_state.increment_env_line_approximate_char_idx();
                     } else {
                         // ignore rest of line
                         break;
@@ -416,12 +423,15 @@ impl<O: Default, P: Default> Parser<O, P> {
             self.multi_char_option_code_requires_double_announcer,
         );
 
+        parse_state.line_or_env_arg_char_idx = 0;
+
         for char in line.chars() {
             let env_char = EnvChar::Unicode(char);
             let more = self.process_char(&mut parse_state, env_char, &mut args)?;
 
             if more {
-                parse_state.increment_line_char_idx();
+                parse_state.increment_env_line_approximate_char_idx();
+                parse_state.increment_env_arg_char_idx();
             } else {
                 // ignore rest of line
                 break;
@@ -456,10 +466,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                     } else {
                         if self.option_announcer_chars.contains(&unicode_char) {
                             parse_state.arg_parse_state = ArgParseState::InOption;
-                            parse_state.option_parse_state = OptionParseState::InCode;
-                            parse_state.option_announcer_char = unicode_char;
-                            parse_state.arg_start_line_char_idx = parse_state.line_char_idx;
-                            parse_state.option_code_start_line_char_idx = parse_state.line_char_idx + 1;
+                            self.initialise_option_parsing(parse_state, unicode_char);
                         } else {
                             parse_state.arg_parse_state = ArgParseState::InParam;
                             self.initialise_param_parsing(parse_state, unicode_char, false);
@@ -684,7 +691,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     }
 
     fn finalise_option_code<'a>(&'a self, parse_state: &mut ParseState, value_announced: ValueAnnounced, args: &mut Args<'a, O, P>)  -> Result<(), ParseError> {
-        parse_state.set_option_code(Some(parse_state.line_char_idx))?;
+        parse_state.set_option_code(Some(parse_state.line_or_env_arg_char_idx))?;
         match value_announced {
             ValueAnnounced::Definitely => {
                 if self.can_option_code_have_value(parse_state) {
@@ -824,9 +831,18 @@ impl<O: Default, P: Default> Parser<O, P> {
         false
     }
 
+    fn initialise_option_parsing(&self, parse_state: &mut ParseState, unicode_char: char) {
+        parse_state.option_parse_state = OptionParseState::InCode;
+        parse_state.option_announcer_char = unicode_char;
+        parse_state.arg_start_char_idx = parse_state.line_or_env_arg_char_idx;
+        parse_state.arg_start_env_line_approximate_char_idx = parse_state.env_line_approximate_char_idx;
+        parse_state.option_code_start_line_char_idx = parse_state.line_or_env_arg_char_idx + 1;
+    }
+
     fn initialise_param_parsing(&self, parse_state: &mut ParseState, unicode_char: char, is_binary: bool) {
         parse_state.value_bldr.clear();
-        parse_state.arg_start_line_char_idx = parse_state.line_char_idx;
+        parse_state.arg_start_char_idx = parse_state.line_or_env_arg_char_idx;
+        parse_state.arg_start_env_line_approximate_char_idx = parse_state.env_line_approximate_char_idx;
         parse_state.value_quoted = self.quote_chars.contains(&unicode_char);
         if parse_state.value_quoted {
             parse_state.arg_quote_char = unicode_char;
@@ -959,8 +975,10 @@ impl<O: Default, P: Default> Parser<O, P> {
         };
         let properties = OptionProperties {
             matcher,
-            line_char_index: parse_state.arg_start_line_char_idx,
+            char_index: parse_state.arg_start_char_idx,
+            env_line_approximate_char_index: parse_state.arg_start_env_line_approximate_char_idx,
             arg_index: parse_state.arg_count,
+            env_arg_index: parse_state.env_arg_idx,
             option_index: parse_state.option_count,
             code: parse_state.option_code.clone(),
             value_text
@@ -1044,8 +1062,10 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn add_param_arg<'a>(&self, parse_state: &mut ParseState, matcher: &'a Matcher<O, P>, args: &mut Args<'a, O, P>) {
         let properties = ParamProperties {
             matcher,
-            line_char_index: parse_state.arg_start_line_char_idx,
+            char_index: parse_state.arg_start_char_idx,
+            env_line_approximate_char_index: parse_state.arg_start_env_line_approximate_char_idx,
             arg_index: parse_state.arg_count,
+            env_arg_index: parse_state.env_arg_idx,
             param_index: parse_state.param_count,
             value_text: parse_state.value_bldr.clone(),
         };
@@ -1065,8 +1085,10 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn add_binary_arg<'a>(&self, parse_state: &mut ParseState, matcher: &'a Matcher<O, P>, args: &mut Args<'a, O, P>) {
         let properties = BinaryProperties {
             matcher,
-            line_char_index: parse_state.arg_start_line_char_idx,
+            char_index: parse_state.arg_start_char_idx,
+            env_line_approximate_char_index: parse_state.arg_start_env_line_approximate_char_idx,
             arg_index: parse_state.arg_count,
+            env_arg_index: parse_state.env_arg_idx,
             value_text: parse_state.value_bldr.clone(),
         };
 

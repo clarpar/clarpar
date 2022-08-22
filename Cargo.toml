@@ -2,5 +2,6 @@
 
 members = [
     "parmacl",
+    "parmacl_env_args_tests",
 ]
 

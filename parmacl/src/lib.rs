@@ -74,7 +74,7 @@
 //!        Arg::Binary(properties) => {
 //!            assert_eq!(properties.arg_index, 0);
 //!            assert_eq!(properties.value_text, "binary name");
-//!            assert_eq!(properties.line_char_index, 0);
+//!            assert_eq!(properties.char_index, 0);
 //!        },
 //!        Arg::Option(properties) => {
 //!            match properties.matcher.option_tag() {
@@ -85,7 +85,7 @@
 //!                    assert_eq!(properties.option_index, 0);
 //!                    assert_eq!(properties.code, "a");
 //!                    assert_eq!(properties.value_text, None);
-//!                    assert_eq!(properties.line_char_index, 14);
+//!                    assert_eq!(properties.char_index, 14);
 //!                },
 //!                OptionEnum::B => {
 //!                    // Process option B
@@ -103,7 +103,7 @@
 //!                    assert_eq!(properties.arg_index, 2);
 //!                    assert_eq!(properties.param_index, 0);
 //!                    assert_eq!(properties.value_text, "1st \"Param\"");
-//!                    assert_eq!(properties.line_char_index, 17);
+//!                    assert_eq!(properties.char_index, 17);
 //!                },
 //!                ParamEnum::Param2 => {
 //!                    // Process parameter Param2

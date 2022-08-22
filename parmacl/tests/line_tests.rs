@@ -45,7 +45,7 @@ fn no_matchers() {
             Arg::Binary(properties) => {
                 assert_eq!(properties.arg_index, 0);
                 assert_eq!(properties.value_text, "binary");
-                assert_eq!(properties.line_char_index, 0);
+                assert_eq!(properties.char_index, 0);
             },
             Arg::Option(properties) => {
                 match properties.option_index {
@@ -53,13 +53,13 @@ fn no_matchers() {
                         assert_eq!(properties.arg_index, 3);
                         assert_eq!(properties.code, "a");
                         assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 21);
+                        assert_eq!(properties.char_index, 21);
                     },
                     1 => {
                         assert_eq!(properties.arg_index, 4);
                         assert_eq!(properties.code, "b");
                         assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 24);
+                        assert_eq!(properties.char_index, 24);
                     },
                     _ => {
                         panic!("Unexpected option");
@@ -71,17 +71,17 @@ fn no_matchers() {
                     0 => {
                         assert_eq!(properties.arg_index, 1);
                         assert_eq!(properties.value_text, "param1");
-                        assert_eq!(properties.line_char_index, 7);
+                        assert_eq!(properties.char_index, 7);
                     },
                     1 => {
                         assert_eq!(properties.arg_index, 2);
                         assert_eq!(properties.value_text, "param2");
-                        assert_eq!(properties.line_char_index, 14);
+                        assert_eq!(properties.char_index, 14);
                     },
                     2 => {
                         assert_eq!(properties.arg_index, 5);
                         assert_eq!(properties.value_text, "param3");
-                        assert_eq!(properties.line_char_index, 27);
+                        assert_eq!(properties.char_index, 27);
                     },
                     _ => {
                         panic!("Unexpected param");
@@ -283,7 +283,7 @@ fn basic_matchers() {
             Arg::Binary(properties) => {
                 assert_eq!(properties.arg_index, 0);
                 assert_eq!(properties.value_text, "binary name");
-                assert_eq!(properties.line_char_index, 0);
+                assert_eq!(properties.char_index, 0);
             },
             Arg::Option(properties) => {
                 match properties.matcher.option_tag() {
@@ -292,112 +292,112 @@ fn basic_matchers() {
                         assert_eq!(properties.option_index, 0);
                         assert_eq!(properties.code, "a");
                         assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 28);
+                        assert_eq!(properties.char_index, 28);
                     },
                     OptionEnum::B => {
                         assert_eq!(properties.arg_index, 4);
                         assert_eq!(properties.option_index, 1);
                         assert_eq!(properties.code, "b");
                         assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 31);
+                        assert_eq!(properties.char_index, 31);
                     },
                     OptionEnum::C => {
                         assert_eq!(properties.arg_index, 6);
                         assert_eq!(properties.option_index, 2);
                         assert_eq!(properties.code, "c");
                         assert_eq!(properties.value_text, Some(String::from("valueC_1")));
-                        assert_eq!(properties.line_char_index, 41);
+                        assert_eq!(properties.char_index, 41);
                     },
                     OptionEnum::D => {
                         assert_eq!(properties.arg_index, 9);
                         assert_eq!(properties.option_index, 3);
                         assert_eq!(properties.code, "d");
                         assert_eq!(properties.value_text, Some(String::from("value D1")));
-                        assert_eq!(properties.line_char_index, 72);
+                        assert_eq!(properties.char_index, 72);
                     },
                     OptionEnum::E => {
                         assert_eq!(properties.arg_index, 10);
                         assert_eq!(properties.option_index, 4);
                         assert_eq!(properties.code, "e");
                         assert_eq!(properties.value_text, Some(String::from("-valueE1")));
-                        assert_eq!(properties.line_char_index, 86);
+                        assert_eq!(properties.char_index, 86);
                     },
                     OptionEnum::F => {
                         assert_eq!(properties.arg_index, 11);
                         assert_eq!(properties.option_index, 5);
                         assert_eq!(properties.code, "F");
                         assert_eq!(properties.value_text, Some(String::from("-value F1")));
-                        assert_eq!(properties.line_char_index, 98);
+                        assert_eq!(properties.char_index, 98);
                     },
                     OptionEnum::G => {
                         assert_eq!(properties.arg_index, 12);
                         assert_eq!(properties.option_index, 6);
                         assert_eq!(properties.code, "g");
                         assert_eq!(properties.value_text, Some(String::from("optvalueG1")));
-                        assert_eq!(properties.line_char_index, 113);
+                        assert_eq!(properties.char_index, 113);
                     },
                     OptionEnum::Hh => {
                         assert_eq!(properties.arg_index, 14);
                         assert_eq!(properties.option_index, 7);
                         assert_eq!(properties.code, "hh");
                         assert_eq!(properties.value_text, None);
-                        assert_eq!(properties.line_char_index, 134);
+                        assert_eq!(properties.char_index, 134);
                     },
                     OptionEnum::Ii => {
                         assert_eq!(properties.arg_index, 15);
                         assert_eq!(properties.option_index, 8);
                         assert_eq!(properties.code, "ii");
                         assert_eq!(properties.value_text, Some(String::from("valueII1")));
-                        assert_eq!(properties.line_char_index, 138);
+                        assert_eq!(properties.char_index, 138);
                     },
                     OptionEnum::Jj => {
                         assert_eq!(properties.arg_index, 16);
                         assert_eq!(properties.option_index, 9);
                         assert_eq!(properties.code, "JJ");
                         assert_eq!(properties.value_text, Some(String::from("-optValueJJ1")));
-                        assert_eq!(properties.line_char_index, 151);
+                        assert_eq!(properties.char_index, 151);
                     },
                     OptionEnum::Kkkk => {
                         assert_eq!(properties.arg_index, 17);
                         assert_eq!(properties.option_index, 10);
                         assert_eq!(properties.code, "kkkk");
                         assert_eq!(properties.value_text, Some(String::from("valueKKKK1")));
-                        assert_eq!(properties.line_char_index, 168);
+                        assert_eq!(properties.char_index, 168);
                     },
                     OptionEnum::Ll => {
                         assert_eq!(properties.arg_index, 18);
                         assert_eq!(properties.option_index, 11);
                         assert_eq!(properties.code, "LL");
                         assert_eq!(properties.value_text, Some(String::from("-optValueLL1")));
-                        assert_eq!(properties.line_char_index, 187);
+                        assert_eq!(properties.char_index, 187);
                     },
                     OptionEnum::M => {
                         assert_eq!(properties.arg_index, 19);
                         assert_eq!(properties.option_index, 12);
                         assert_eq!(properties.code, "m");
                         assert_eq!(properties.value_text, Some(String::from("opt\"valueM")));
-                        assert_eq!(properties.line_char_index, 206);
+                        assert_eq!(properties.char_index, 206);
                     },
                     OptionEnum::N => {
                         assert_eq!(properties.arg_index, 20);
                         assert_eq!(properties.option_index, 13);
                         assert_eq!(properties.code, "n");
                         assert_eq!(properties.value_text, Some(String::from("opt\"valueN")));
-                        assert_eq!(properties.line_char_index, 223);
+                        assert_eq!(properties.char_index, 223);
                     },
                     OptionEnum::O => {
                         assert_eq!(properties.arg_index, 21);
                         assert_eq!(properties.option_index, 14);
                         assert_eq!(properties.code, "o");
                         assert_eq!(properties.value_text, Some(String::from("opt\"valueO\"")));
-                        assert_eq!(properties.line_char_index, 237);
+                        assert_eq!(properties.char_index, 237);
                     },
                     OptionEnum::P => {
                         assert_eq!(properties.arg_index, 22);
                         assert_eq!(properties.option_index, 15);
                         assert_eq!(properties.code, "p");
                         assert_eq!(properties.value_text, Some(String::from("opt\"\"valueP")));
-                        assert_eq!(properties.line_char_index, 252);
+                        assert_eq!(properties.char_index, 252);
                     },
                 }
             }
@@ -407,61 +407,61 @@ fn basic_matchers() {
                         assert_eq!(properties.arg_index, 1);
                         assert_eq!(properties.param_index, 0);
                         assert_eq!(properties.value_text, "param1");
-                        assert_eq!(properties.line_char_index, 14);
+                        assert_eq!(properties.char_index, 14);
                     },
                     ParamEnum::Param2 => {
                         assert_eq!(properties.arg_index, 2);
                         assert_eq!(properties.param_index, 1);
                         assert_eq!(properties.value_text, "param2");
-                        assert_eq!(properties.line_char_index, 21);
+                        assert_eq!(properties.char_index, 21);
                     },
                     ParamEnum::Param3 => {
                         assert_eq!(properties.arg_index, 5);
                         assert_eq!(properties.param_index, 2);
                         assert_eq!(properties.value_text, "param3");
-                        assert_eq!(properties.line_char_index, 34);
+                        assert_eq!(properties.char_index, 34);
                     },
                     ParamEnum::Param4 => {
                         assert_eq!(properties.arg_index, 7);
                         assert_eq!(properties.param_index, 3);
                         assert_eq!(properties.value_text, "param4");
-                        assert_eq!(properties.line_char_index, 53);
+                        assert_eq!(properties.char_index, 53);
                     },
                     ParamEnum::Param5 => {
                         assert_eq!(properties.arg_index, 8);
                         assert_eq!(properties.param_index, 4);
                         assert_eq!(properties.value_text, "param 5");
-                        assert_eq!(properties.line_char_index, 62);
+                        assert_eq!(properties.char_index, 62);
                     },
                     ParamEnum::Param6 => {
                         assert_eq!(properties.arg_index, 13);
                         assert_eq!(properties.param_index, 5);
                         assert_eq!(properties.value_text, "param6");
-                        assert_eq!(properties.line_char_index, 127);
+                        assert_eq!(properties.char_index, 127);
                     },
                     ParamEnum::Param7 => {
                         assert_eq!(properties.arg_index, 23);
                         assert_eq!(properties.param_index, 6);
                         assert_eq!(properties.value_text, "par\"am7");
-                        assert_eq!(properties.line_char_index, 267);
+                        assert_eq!(properties.char_index, 267);
                     },
                     ParamEnum::Param8 => {
                         assert_eq!(properties.arg_index, 24);
                         assert_eq!(properties.param_index, 7);
                         assert_eq!(properties.value_text, "par\"am8");
-                        assert_eq!(properties.line_char_index, 278);
+                        assert_eq!(properties.char_index, 278);
                     },
                     ParamEnum::Param9 => {
                         assert_eq!(properties.arg_index, 25);
                         assert_eq!(properties.param_index, 8);
                         assert_eq!(properties.value_text, "par\"am9\"");
-                        assert_eq!(properties.line_char_index, 286);
+                        assert_eq!(properties.char_index, 286);
                     },
                     ParamEnum::Param10 => {
                         assert_eq!(properties.arg_index, 26);
                         assert_eq!(properties.param_index, 9);
                         assert_eq!(properties.value_text, "par\"\"am10");
-                        assert_eq!(properties.line_char_index, 295);
+                        assert_eq!(properties.char_index, 295);
                     },
                 }
             }

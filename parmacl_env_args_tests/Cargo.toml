@@ -1,0 +1,15 @@
+[package]
+name = "parmacl_env_args_tests"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+parmacl = { path = "../parmacl" }
+
+[[bin]]
+name = "basic_arg_env_tester"
+path = "basic_arg_env_tester.rs"
+test = false
+harness = false

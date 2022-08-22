@@ -25,6 +25,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "parmacl_env_args_tests"
+version = "0.1.0"
+dependencies = [
+ "parmacl",
+]
+
+[[package]]
 name = "regex"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

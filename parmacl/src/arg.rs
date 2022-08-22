@@ -2,15 +2,19 @@ use crate::matcher::Matcher;
 
 pub trait ArgProperties<O: Default, P: Default> {
     fn get_matcher(&self) -> &Matcher<O, P>;
-    fn get_line_char_index(&self) -> usize;
+    fn get_char_index(&self) -> usize;
+    fn get_env_line_approximate_char_index(&self) -> usize;
     fn get_arg_index(&self) -> usize;
+    fn get_env_arg_index(&self) -> usize;
 }
 
 #[derive(Debug)]
 pub struct OptionProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
-    pub line_char_index: usize,
+    pub char_index: usize,
+    pub env_line_approximate_char_index: usize,
     pub arg_index: usize,
+    pub env_arg_index: usize,
     pub option_index: usize,
     pub code: String,
     pub value_text: Option<String>,
@@ -20,19 +24,27 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for OptionProperties<'a, O,
     fn get_matcher(&self) -> &Matcher<O, P> {
         self.matcher
     }
-    fn get_line_char_index(&self) -> usize {
-        self.line_char_index
+    fn get_char_index(&self) -> usize {
+        self.char_index
+    }
+    fn get_env_line_approximate_char_index(&self) -> usize {
+        self.env_line_approximate_char_index
     }
     fn get_arg_index(&self) -> usize {
         self.arg_index
+    }
+    fn get_env_arg_index(&self) -> usize {
+        self.env_arg_index
     }
 }
 
 #[derive(Debug)]
 pub struct ParamProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
-    pub line_char_index: usize,
+    pub char_index: usize,
+    pub env_line_approximate_char_index: usize,
     pub arg_index: usize,
+    pub env_arg_index: usize,
     pub param_index: usize,
     pub value_text: String,
 }
@@ -41,19 +53,27 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for ParamProperties<'a, O, 
     fn get_matcher(&self) -> &Matcher<O, P> {
         self.matcher
     }
-    fn get_line_char_index(&self) -> usize {
-        self.line_char_index
+    fn get_char_index(&self) -> usize {
+        self.char_index
+    }
+    fn get_env_line_approximate_char_index(&self) -> usize {
+        self.env_line_approximate_char_index
     }
     fn get_arg_index(&self) -> usize {
         self.arg_index
+    }
+    fn get_env_arg_index(&self) -> usize {
+        self.env_arg_index
     }
 }
 
 #[derive(Debug)]
 pub struct BinaryProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
-    pub line_char_index: usize,
+    pub char_index: usize,
+    pub env_line_approximate_char_index: usize,
     pub arg_index: usize,
+    pub env_arg_index: usize,
     pub value_text: String,
 }
 
@@ -61,11 +81,17 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for BinaryProperties<'a, O,
     fn get_matcher(&self) -> &Matcher<O, P> {
         self.matcher
     }
-    fn get_line_char_index(&self) -> usize {
-        self.line_char_index
+    fn get_char_index(&self) -> usize {
+        self.char_index
+    }
+    fn get_env_line_approximate_char_index(&self) -> usize {
+        self.env_line_approximate_char_index
     }
     fn get_arg_index(&self) -> usize {
         self.arg_index
+    }
+    fn get_env_arg_index(&self) -> usize {
+        self.env_arg_index
     }
 }
 
