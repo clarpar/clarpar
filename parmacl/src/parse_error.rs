@@ -1,4 +1,4 @@
-use crate::parse_error_id::{ParseErrorId};
+use crate::parse_error_id::ParseErrorId;
 use std::{fmt::Display, error::Error};
 
 #[derive(Debug)]

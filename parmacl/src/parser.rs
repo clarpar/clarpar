@@ -19,10 +19,10 @@ pub const DEFAULT_LINE_EMBED_QUOTE_CHAR_WITH_DOUBLE: bool = true;
 pub const DEFAULT_LINE_ESCAPE_CHAR: Option<char> = None;
 pub const DEFAULT_LINE_ESCAPEABLE_LOGICAL_CHARS: [EscapeableLogicalChar; 2] = [EscapeableLogicalChar::Escape, EscapeableLogicalChar::Quote];
 pub const DEFAULT_LINE_ESCAPEABLE_CHARS: [char; 0] = [];
-pub const DEFAULT_LINE_PARSE_TERMINATE_CHARS: [char; 3] = ['<', '>', '|'];
+pub const DEFAULT_LINE_PARSE_TERMINATE_CHARS: [char; 0] = [];
 pub const DEFAULT_LINE_FIRST_ARG_IS_BINARY: bool = true;
 
-pub const DEFAULT_ENV_ARGS_QUOTE_CHARS: [char; 1] = ['"'];
+pub const DEFAULT_ENV_ARGS_QUOTE_CHARS: [char; 0] = [];
 pub const DEFAULT_ENV_ARGS_OPTION_ANNOUNCER_CHARS: [char; 1] = ['-'];
 pub const DEFAULT_ENV_ARGS_OPTION_CODES_CASE_SENSITIVE: bool = false;
 pub const DEFAULT_ENV_ARGS_OPTION_CODE_CAN_BE_EMPTY: bool = false;
@@ -30,49 +30,19 @@ pub const DEFAULT_ENV_ARGS_MULTI_CHAR_OPTION_CODE_REQUIRES_DOUBLE_ANNOUNCER: boo
 pub const DEFAULT_ENV_ARGS_OPTION_VALUE_ANNOUNCER_CHARS: [char; 1] = [' '];
 pub const DEFAULT_ENV_ARGS_OPTION_VALUES_CASE_SENSITIVE: bool = false;
 pub const DEFAULT_ENV_ARGS_PARAMS_CASE_SENSITIVE: bool = false;
-pub const DEFAULT_ENV_ARGS_EMBED_QUOTE_CHAR_WITH_DOUBLE: bool = true;
+pub const DEFAULT_ENV_ARGS_EMBED_QUOTE_CHAR_WITH_DOUBLE: bool = false;
 pub const DEFAULT_ENV_ARGS_ESCAPE_CHAR: Option<char> = None;
 pub const DEFAULT_ENV_ARGS_ESCAPEABLE_LOGICAL_CHARS: [EscapeableLogicalChar; 2] = [EscapeableLogicalChar::Escape, EscapeableLogicalChar::Quote];
 pub const DEFAULT_ENV_ARGS_ESCAPEABLE_CHARS: [char; 0] = [];
-pub const DEFAULT_ENV_ARGS_PARSE_TERMINATE_CHARS: [char; 3] = ['<', '>', '|'];
+pub const DEFAULT_ENV_ARGS_PARSE_TERMINATE_CHARS: [char; 0] = [];
 pub const DEFAULT_ENV_ARGS_FIRST_ARG_IS_BINARY: bool = true;
 
 pub struct Parser<O: Default = DefaultTagType, P: Default = DefaultTagType> {
-    /// The array of characters any of which can be used as a quote character.  A quote character is used to enclose all text in a parameter
-    /// or an option value.
-    ///
-    /// Whitespace characters (normally spaces) are used to delimit arguments in a command line.  If a parameter or an option value contain
-    /// whitespace characters, place a quote character at either end of the parameter or value text.  If the parameter or option value already contain 
-    /// one or more quote characters, then these can be embedded using either [`Double quote characters`](Parser::embed_quote_char_with_double) or
-    /// [`Escaping`](Parser::escape_char)
-    ///
-    /// If text starts with a quote character, you also need to embed it with either quoting or escaping or enclose it with a different quote character.
-    /// You can also use quoting to enclose text which begins with a option announcer but is not an option. See
-    /// [`Matcher.option_has_value`](Matcher::option_has_value) for alternative ways of handling text beginning with the option announcer character.
-    ///
-    /// Default: `"` (Double quote character is the only character in the array)
     quote_chars: Vec<char>,
-    /// The array of characters any of which can be used to signify the start of an option argument in the command line.
-    ///
-    /// Normally a command line argument which begins with one of the characters in this array will be parsed as a option. However this behaviour
-    /// can be overridden with [`Matcher.option_has_value`](Matcher::option_has_value).
-    ///
-    /// Default: `-` (Dash character is the only character in the array)
     option_announcer_chars: Vec<char>,
     option_codes_case_sensitive: bool,
     option_code_can_be_empty: bool,
     multi_char_option_code_requires_double_announcer: bool,
-    /// The array of character any of which can be used end an option code and announce its option value.
-    ///
-    /// If an option argument does not end with this character, then it is a switch/flag only and does not include a value.
-    /// If it does contain this character, then the characters prior to this character are the option code and the characters after
-    /// it, are the option value.
-    /// 
-    /// Note that if a whitespace character is used as a option value announcer, there is some ambiguity as to whether that character is
-    /// announcing the value for that option or being a delimiter for the next argument.  This ambiguity is resolved by a matcher's
-    /// [`Matcher.option_has_value`](Matcher::option_has_value) property.
-    ///
-    /// Default: ` `  (Space character)
     option_value_announcer_chars: Vec<char>,
     option_values_case_sensitive: bool,
     params_case_sensitive: bool,
@@ -81,13 +51,6 @@ pub struct Parser<O: Default = DefaultTagType, P: Default = DefaultTagType> {
     escapeable_logical_chars: Vec<EscapeableLogicalChar>,
     escapeable_chars: Vec<char>,
     first_arg_is_binary: bool,
-    /// An array of characters which terminate the parsing of arguments in the command line.
-    /// 
-    /// If any of the characters in this array are encountered outside a quoted value, then that character
-    /// and all remaining characters in the command line are ignored.  This can be used to ignore standard input/output
-    /// redirection and the end of a command line.
-    ///
-    /// Default: `<>|`  (standard input redirection to file, standard output redirection to file, pipe standard output)
     parse_terminate_chars: Vec<char>,
 
     matchers: Matchers<O, P>,
@@ -138,19 +101,42 @@ impl<O: Default, P: Default> Default for Parser<O, P> {
 }
 
 impl<O: Default, P: Default> Parser<O, P> {
+    /// Get the array of characters any of which can be used as a quote character.  A quote character is used to enclose all text in a parameter
+    /// or an option value.
+    ///
+    /// Whitespace characters (normally spaces) are used to delimit arguments in a command line.  If a parameter or an option value contain
+    /// whitespace characters, place a quote character at either end of the parameter or value text.  If the parameter or option value already contain 
+    /// one or more quote characters, then these can be embedded using either [`Double quote characters`](Parser::embed_quote_char_with_double) or
+    /// [`Escaping`](Parser::escape_char)
+    ///
+    /// If text starts with a quote character, you also need to embed it with either quoting or escaping or enclose it with a different quote character.
+    /// You can also use quoting to enclose text which begins with a option announcer but is not an option. See
+    /// [`Matcher::option_has_value`](Matcher::option_has_value) for alternative ways of handling text beginning with the option announcer character.
+    ///
+    /// Line Default: `['"']` (Array with one double quote character)
+    /// Env args Default: `[]` (Empty array)
     pub fn quote_chars(&self) -> &[char] {
         &self.quote_chars
     }
 
+    /// Get the array of characters any of which can be used as a quote character. See [Parser::quote_chars](Parser::quote_chars) for more details.
     pub fn set_quote_chars(&mut self, value: &[char]) -> &mut Self {
         self.quote_chars = Vec::from(value);
         self
     }
 
+    /// Get the array of characters any of which can be used to signify the start of an option argument in the command line.
+    ///
+    /// Normally a command line argument which begins with one of the characters in this array will be parsed as a option. However this behaviour
+    /// can be overridden with [`Matcher.option_has_value`](Matcher::option_has_value).
+    ///
+    /// Default: `['-']` (Array with one dash character)
     pub fn option_announcer_chars(&self) -> &[char] {
         &self.option_announcer_chars
     }
 
+    /// Set the array of characters any of which can be used to signify the start of an option argument in the command line. See
+    /// [Parser::option_announcer_chars](Parser::option_announcer_chars) for more details.
     pub fn set_option_announcer_chars(&mut self, value: &[char]) -> &mut Self {
         self.option_announcer_chars = Vec::from(value);
         self
@@ -183,10 +169,23 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
+    /// Get the array of characters any of which can be used end an option code and announce its option value.
+    ///
+    /// If an option argument does not end with this character, then it is a switch/flag only and does not include a value.
+    /// If it does contain this character, then the characters prior to this character are the option code and the characters after
+    /// it, are the option value.
+    /// 
+    /// Note that if a whitespace character is used as a option value announcer, there is some ambiguity as to whether that character is
+    /// announcing the value for that option or being a delimiter for the next argument.  This ambiguity is resolved by a matcher's
+    /// [`Matcher.option_has_value`](Matcher::option_has_value) property.
+    ///
+    /// Default: `[' ']`  (Array with one space character)
     pub fn option_value_announcer_chars(&self) -> &[char] {
         &self.option_value_announcer_chars
     }
 
+    /// Set the array of characters any of which can be used end an option code and announce its option value. See
+    /// [Parser::option_value_announcer_chars](Parser::option_value_announcer_chars) for more details.
     pub fn set_option_value_announcer_chars(&mut self, value: &[char]) -> &mut Self {
         self.option_value_announcer_chars = Vec::from(value);
         self
@@ -265,10 +264,19 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
+    /// Get the array of characters which terminate the parsing of arguments in the command line.
+    /// 
+    /// If any of the characters in this array are encountered outside a quoted value, then that character
+    /// and all remaining characters in the command line are ignored.  This can be used to ignore standard input/output
+    /// redirection and the end of a command line.
+    ///
+    /// Default: `[]`  (Empty array)
     pub fn parse_terminate_chars(&self) -> &[char] {
         &self.parse_terminate_chars
     }
 
+    /// Set the array of characters which terminate the parsing of arguments in the command line. See
+    /// [Parser::parse_terminate_chars](Parser::parse_terminate_chars) for more details.
     pub fn set_parse_terminate_chars(&mut self, value: &[char]) -> &mut Self {
         self.parse_terminate_chars = Vec::from(value);
         self
