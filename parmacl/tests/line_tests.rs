@@ -181,98 +181,98 @@ fn basic_matchers() {
     parser
         .push_new_option_matcher("optionA")
             .set_option_tag(OptionEnum::A)
-            .some_option_codes(&[RegexOrText::new_text("a")]);
+            .some_option_codes(&[RegexOrText::with_text("a")]);
 
     parser
         .push_new_option_matcher("optionB")
             .set_option_tag(OptionEnum::B)
-            .some_option_codes(&[RegexOrText::new_text("b")]);
+            .some_option_codes(&[RegexOrText::with_text("b")]);
 
     parser
         .push_new_option_matcher("optionC")
             .set_option_tag(OptionEnum::C)
-            .some_option_codes(&[RegexOrText::new_text("c")])
-            .some_option_has_value(OptionHasValue::Always)
+            .some_option_codes(&[RegexOrText::with_text("c")])
+            .set_option_has_value(OptionHasValue::Always)
             .set_option_value_can_start_with_option_announcer(true);
 
     parser
         .push_new_option_matcher("optionD")
             .set_option_tag(OptionEnum::D)
-            .some_option_codes(&[RegexOrText::new_text("d")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("d")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionE")
             .set_option_tag(OptionEnum::E)
-            .some_option_codes(&[RegexOrText::new_text("E")])
-            .some_option_has_value(OptionHasValue::Always)
+            .some_option_codes(&[RegexOrText::with_text("E")])
+            .set_option_has_value(OptionHasValue::Always)
             .set_option_value_can_start_with_option_announcer(true);
 
     parser
         .push_new_option_matcher("optionF")
             .set_option_tag(OptionEnum::F)
-            .some_option_codes(&[RegexOrText::new_text("f")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("f")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionG")
             .set_option_tag(OptionEnum::G)
-            .some_option_codes(&[RegexOrText::new_text("g")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("g")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionHH")
             .set_option_tag(OptionEnum::Hh)
-            .some_option_codes(&[RegexOrText::new_text("HH")]);
+            .some_option_codes(&[RegexOrText::with_text("HH")]);
 
     parser
         .push_new_option_matcher("optionII")
             .set_option_tag(OptionEnum::Ii)
-            .some_option_codes(&[RegexOrText::new_text("ii")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("ii")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionJJ")
             .set_option_tag(OptionEnum::Jj)
-            .some_option_codes(&[RegexOrText::new_text("JJ")])
-            .some_option_has_value(OptionHasValue::Always)
+            .some_option_codes(&[RegexOrText::with_text("JJ")])
+            .set_option_has_value(OptionHasValue::Always)
             .set_option_value_can_start_with_option_announcer(true);
 
     parser
         .push_new_option_matcher("optionKKKK")
             .set_option_tag(OptionEnum::Kkkk)
-            .some_option_codes(&[RegexOrText::new_text("kkkk")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("kkkk")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionLL")
             .set_option_tag(OptionEnum::Ll)
-            .some_option_codes(&[RegexOrText::new_text("LL")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("LL")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionM")
             .set_option_tag(OptionEnum::M)
-            .some_option_codes(&[RegexOrText::new_text("m")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("m")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionN")
             .set_option_tag(OptionEnum::N)
-            .some_option_codes(&[RegexOrText::new_text("n")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("n")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionO")
             .set_option_tag(OptionEnum::O)
-            .some_option_codes(&[RegexOrText::new_text("o")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("o")])
+            .set_option_has_value(OptionHasValue::Always);
 
     parser
         .push_new_option_matcher("optionP")
             .set_option_tag(OptionEnum::P)
-            .some_option_codes(&[RegexOrText::new_text("p")])
-            .some_option_has_value(OptionHasValue::Always);
+            .some_option_codes(&[RegexOrText::with_text("p")])
+            .set_option_has_value(OptionHasValue::Always);
 
     let args = parser.parse_line(&command_line).unwrap();
 

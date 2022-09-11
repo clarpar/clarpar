@@ -8,6 +8,7 @@ pub trait ArgProperties<O: Default, P: Default> {
     fn get_env_arg_index(&self) -> usize;
 }
 
+/// Properties for an [Arg option variant](Arg::Option)
 #[derive(Debug)]
 pub struct OptionProperties<'a, O: Default, P: Default> {
     pub matcher: &'a Matcher<O, P>,
@@ -95,11 +96,20 @@ impl<'a, O: Default, P: Default> ArgProperties<O, P> for BinaryProperties<'a, O,
     }
 }
 
+/// An enum with variants for the 3 different types of parsed arguments. Each variant has an associated
+/// struct which holds the properties for that type of argument.
+/// 
+/// The [Parser](crate::Parser)'s parse functions will return an array of these variants, one for each
+/// argument parsed, if the parse operation was successful.
 #[derive(Debug)]
 pub enum Arg<'a, O: Default, P: Default> {
+    /// The first argument which normally holds the binary/executable's path or name.
     Binary(BinaryProperties<'a, O, P>),
+    /// A parameter parsed argument.
     Param(ParamProperties<'a, O, P>),
+    /// An option parsed argument.
     Option(OptionProperties<'a, O, P>),
 }
 
+/// Vector of Arg enum variants.
 pub type Args<'a, O, P> = Vec<Arg<'a, O, P>>;

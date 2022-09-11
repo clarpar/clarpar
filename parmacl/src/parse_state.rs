@@ -1,5 +1,5 @@
 use crate::parse_error::{ParseError};
-use crate::parse_error_id::{ParseErrorId};
+use crate::parse_error_type_id::{ParseErrorTypeId};
 
 #[derive(PartialEq, Eq)]
 pub(crate) enum ArgParseState {
@@ -107,7 +107,7 @@ impl ParseState {
                         if first_char_is_announcer {
                             Ok(())
                         } else {
-                            let error = self.create_option_error(ParseErrorId::OptionCodeMissingDoubleAnnouncer);
+                            let error = self.create_option_error(ParseErrorTypeId::OptionCodeMissingDoubleAnnouncer);
                             Err(error)
                         }
                     }
@@ -124,11 +124,12 @@ impl ParseState {
         self.line_or_env_arg_char_idx += 1;
     }
 
-    pub fn create_option_error(&self, error_id: ParseErrorId) -> ParseError {
-        ParseError::new_option(error_id, self.env_line_approximate_char_idx, self.arg_count, self.option_count, &self.option_code)
+    pub fn create_option_error(&self, error_id: ParseErrorTypeId) -> ParseError {
+        ParseError::new_option(error_id, self.env_line_approximate_char_idx,
+            self.arg_count, self.option_count, &self.option_code, &self.value_bldr)
     }
 
-    pub fn create_param_error(&self, error_id: ParseErrorId) -> ParseError {
+    pub fn create_param_error(&self, error_id: ParseErrorTypeId) -> ParseError {
         ParseError::new_param(error_id, self.env_line_approximate_char_idx, self.arg_count, self.option_count, &self.value_bldr)
     }
 }

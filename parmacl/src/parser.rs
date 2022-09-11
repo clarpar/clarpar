@@ -1,10 +1,10 @@
 use std::env;
 use crate::env_char::EnvChar;
-use crate::parse_error_id::{ParseErrorId};
+use crate::parse_error_type_id::{ParseErrorTypeId};
 use crate::parse_error::{ParseError};
 use crate::regex_or_text::{RegexOrText};
 use crate::arg::{Arg, Args, OptionProperties, ParamProperties, BinaryProperties};
-use crate::matcher::{Matcher, Matchers, OptionHasValue, DefaultTagType, DEFAULT_OPTION_HAS_VALUE, MatchArgType};
+use crate::matcher::{Matcher, Matchers, OptionHasValue, DefaultTagType, MatchArgTypeId};
 use crate::parse_state::{ParseState, ArgParseState, OptionParseState};
 
 pub const DEFAULT_LINE_QUOTE_CHARS: [char; 1] = ['"'];
@@ -322,7 +322,7 @@ impl<O: Default, P: Default> Parser<O, P> {
             .set_first_arg_is_binary(DEFAULT_ENV_ARGS_FIRST_ARG_IS_BINARY);
     }
 
-    pub fn get_matchers(&self) -> &Matchers<O, P> {
+    pub fn matchers(&self) -> &Matchers<O, P> {
         &self.matchers
     }
 
@@ -489,8 +489,13 @@ impl<O: Default, P: Default> Parser<O, P> {
             ArgParseState::InParam => {
                 match env_char {
                     EnvChar::Separator => {
-                        self.match_param_arg(parse_state, args)?;
-                        parse_state.arg_parse_state = ArgParseState::WaitOptionOrParam;
+                        if parse_state.value_quoted {
+                            Err(parse_state.create_param_error(ParseErrorTypeId::ParamMissingClosingQuoteCharacter))
+                        } else {
+                            self.match_param_arg(parse_state, args)?;
+                            parse_state.arg_parse_state = ArgParseState::WaitOptionOrParam;
+                            Ok(true)
+                        }
                     },
                     EnvChar::Unicode(unicode_char) => {
                         if let Some(unwrapped_escape_char) = self.escape_char {
@@ -515,9 +520,10 @@ impl<O: Default, P: Default> Parser<O, P> {
                                 }
                             }
                         }
+
+                        Ok(true)
                     }
                 }
-                Ok(true)
             }
 
             ArgParseState::InParamPossibleEndQuote => {
@@ -535,7 +541,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                                 self.match_param_arg(parse_state, args)?;
                                 parse_state.arg_parse_state = ArgParseState::WaitOptionOrParam;
                             } else {
-                                Err(parse_state.create_param_error(ParseErrorId::QuotedParamNotFollowedByWhitespaceChar))?;
+                                Err(parse_state.create_param_error(ParseErrorTypeId::QuotedParamNotFollowedByWhitespaceChar))?;
                             }
                         }
                     }
@@ -546,14 +552,14 @@ impl<O: Default, P: Default> Parser<O, P> {
             ArgParseState::InParamEscaped => {
                 match env_char {
                     EnvChar::Separator => {
-                        Err(parse_state.create_param_error(ParseErrorId::EscapeCharacterAtEndOfParam))?;
+                        Err(parse_state.create_param_error(ParseErrorTypeId::EscapeCharacterAtEndOfParam))?;
                     }
                     EnvChar::Unicode(unicode_char) => {
                         if self.can_char_be_escaped(parse_state, unicode_char) {
                             parse_state.value_bldr.push(unicode_char);
                             parse_state.arg_parse_state = ArgParseState::InParam;
                         } else {
-                            Err(parse_state.create_param_error(ParseErrorId::EscapedCharacterInParamCannotBeEscaped))?;
+                            Err(parse_state.create_param_error(ParseErrorTypeId::EscapedCharacterInParamCannotBeEscaped))?;
                         }
                     }
                 }
@@ -579,11 +585,11 @@ impl<O: Default, P: Default> Parser<O, P> {
                                         Ok(true)
                                     } else {
                                         if self.quote_chars.contains(&unicode_char) {
-                                            Err(parse_state.create_option_error(ParseErrorId::OptionCodeCannotContainQuoteChar))
+                                            Err(parse_state.create_option_error(ParseErrorTypeId::OptionCodeCannotContainQuoteChar))
                                         } else {
                                             if let Some(escape_char) = self.escape_char {
                                                 if escape_char == unicode_char {
-                                                    Err(parse_state.create_option_error(ParseErrorId::OptionCodeCannotContainEscapeChar))
+                                                    Err(parse_state.create_option_error(ParseErrorTypeId::OptionCodeCannotContainEscapeChar))
                                                 } else {
                                                     Ok(true)
                                                 }
@@ -625,8 +631,13 @@ impl<O: Default, P: Default> Parser<O, P> {
                     OptionParseState::InValue => {
                         match env_char {
                             EnvChar::Separator => {
-                                self.match_option_arg(parse_state, true, args)?;
-                                parse_state.arg_parse_state = ArgParseState::WaitOptionOrParam;
+                                if parse_state.value_quoted {
+                                    Err(parse_state.create_option_error(ParseErrorTypeId::OptionValueMissingClosingQuoteCharacter))
+                                } else {
+                                    self.match_option_arg(parse_state, true, args)?;
+                                    parse_state.arg_parse_state = ArgParseState::WaitOptionOrParam;
+                                    Ok(true)
+                                }
                             },
                             EnvChar::Unicode(unicode_char) => {
                                 if let Some(unwrapped_escape_char) = self.escape_char {
@@ -634,7 +645,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                                         parse_state.option_parse_state = OptionParseState::InValueEscaped;
                                     }
                                 }
-                
+
                                 if parse_state.option_parse_state == OptionParseState::InValue {
                                     if parse_state.value_quoted {
                                         if unicode_char == parse_state.arg_quote_char {
@@ -651,9 +662,10 @@ impl<O: Default, P: Default> Parser<O, P> {
                                         }
                                     }
                                 }
+
+                                Ok(true)
                             },
                         }
-                        Ok(true)
                     }
                     OptionParseState::InValuePossibleEndQuote => {
                         match env_char {
@@ -670,7 +682,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                                         self.match_option_arg(parse_state, true, args)?;
                                         parse_state.arg_parse_state = ArgParseState::WaitOptionOrParam;
                                     } else {
-                                        Err(parse_state.create_option_error(ParseErrorId::QuotedOptionValueNotFollowedByWhitespaceChar))?;
+                                        Err(parse_state.create_option_error(ParseErrorTypeId::QuotedOptionValueNotFollowedByWhitespaceChar))?;
                                     }
                                 }
                             },
@@ -680,14 +692,14 @@ impl<O: Default, P: Default> Parser<O, P> {
                     OptionParseState::InValueEscaped => {
                         match env_char {
                             EnvChar::Separator => {
-                                Err(parse_state.create_param_error(ParseErrorId::EscapeCharacterAtEndOfOptionValue))?;
+                                Err(parse_state.create_option_error(ParseErrorTypeId::EscapeCharacterAtEndOfOptionValue))?;
                             }
                             EnvChar::Unicode(unicode_char) => {
                                 if self.can_char_be_escaped(parse_state, unicode_char) {
                                     parse_state.value_bldr.push(unicode_char);
                                     parse_state.option_parse_state = OptionParseState::InValue;
                                 } else {
-                                    Err(parse_state.create_param_error(ParseErrorId::EscapedCharacterInOptionValueCannotBeEscaped))?;
+                                    Err(parse_state.create_option_error(ParseErrorTypeId::EscapedCharacterInOptionValueCannotBeEscaped))?;
                                 }
                             }
                         }
@@ -706,7 +718,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                     parse_state.option_parse_state = OptionParseState::WaitOptionValue;
                     Ok(())
                 } else {
-                    Err(parse_state.create_option_error(ParseErrorId::NoMatchForOptionWithValue))
+                    Err(parse_state.create_option_error(ParseErrorTypeId::NoMatchForOptionWithValue))
                 }
             },
             ValueAnnounced::Ambiguous => {
@@ -740,7 +752,7 @@ impl<O: Default, P: Default> Parser<O, P> {
 
             ArgParseState::InParam => {
                 if parse_state.value_quoted {
-                    Err(parse_state.create_param_error(ParseErrorId::ParamMissingClosingQuoteCharacter))
+                    Err(parse_state.create_param_error(ParseErrorTypeId::ParamMissingClosingQuoteCharacter))
                 } else {
                     self.match_param_arg(parse_state, args)
                 }
@@ -751,7 +763,7 @@ impl<O: Default, P: Default> Parser<O, P> {
             }
 
             ArgParseState::InParamEscaped => {
-                Err(parse_state.create_param_error(ParseErrorId::EscapedCharacterInParamCannotBeEscaped))
+                Err(parse_state.create_param_error(ParseErrorTypeId::EscapedCharacterInParamCannotBeEscaped))
             }
 
             ArgParseState::InOption => {
@@ -765,7 +777,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         let has_value = self.can_option_have_value_with_first_char(parse_state, false)?;
                         match has_value {
                             OptionHasValueBasedOnFirstChar::Must => {
-                                Err(parse_state.create_option_error(ParseErrorId::OptionMissingValue))
+                                Err(parse_state.create_option_error(ParseErrorTypeId::OptionMissingValue))
                             }
                             OptionHasValueBasedOnFirstChar::Possibly => {
                                 parse_state.current_option_value_may_be_param = false;
@@ -779,7 +791,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                     }
                     OptionParseState::InValue => {
                         if parse_state.value_quoted {
-                            Err(parse_state.create_option_error(ParseErrorId::OptionValueMissingClosingQuoteCharacter))
+                            Err(parse_state.create_option_error(ParseErrorTypeId::OptionValueMissingClosingQuoteCharacter))
                         } else {
                             self.match_option_arg(parse_state, true, args)
                         }
@@ -788,7 +800,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         self.match_option_arg(parse_state, true, args)
                     }
                     OptionParseState::InValueEscaped => {
-                        Err(parse_state.create_option_error(ParseErrorId::EscapedCharacterInOptionValueCannotBeEscaped))
+                        Err(parse_state.create_option_error(ParseErrorTypeId::EscapeCharacterAtEndOfLine))
                     }
                 }
             }
@@ -885,8 +897,7 @@ impl<O: Default, P: Default> Parser<O, P> {
 
     fn can_option_code_have_value_with_matcher(&self, parse_state: &ParseState, matcher: &Matcher<O, P>) -> bool {
         if self.try_match_option_excluding_value(parse_state, matcher) {
-            let option_has_value = matcher.option_has_value().as_ref().unwrap_or(&DEFAULT_OPTION_HAS_VALUE);
-            *option_has_value != OptionHasValue::Never
+            *matcher.option_has_value() != OptionHasValue::Never
         } else { 
             false
         }
@@ -915,14 +926,13 @@ impl<O: Default, P: Default> Parser<O, P> {
         matcher: &Matcher<O, P>
     ) -> Result<OptionHasValueBasedOnFirstChar, ParseError> {
         if self.try_match_option_excluding_value(parse_state, matcher) {
-            let option_has_value = matcher.option_has_value().as_ref().unwrap_or(&DEFAULT_OPTION_HAS_VALUE);
-            match *option_has_value {
+            match *matcher.option_has_value() {
                 OptionHasValue::Always => {
                     if matcher.option_value_can_start_with_option_announcer() {
                         Ok(OptionHasValueBasedOnFirstChar::Must)
                     } else {
                         if first_char_of_value_is_option_announcer {
-                            Err(parse_state.create_option_error(ParseErrorId::OptionValueCannotBeginWithOptionAnnouncer))
+                            Err(parse_state.create_option_error(ParseErrorTypeId::OptionValueCannotStartWithOptionAnnouncer))
                         } else {
                             Ok(OptionHasValueBasedOnFirstChar::Must)
                         }
@@ -937,7 +947,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                         }
                     } else {
                         if first_char_of_value_is_option_announcer {
-                            Err(parse_state.create_option_error(ParseErrorId::OptionValueCannotBeginWithOptionAnnouncer))
+                            Err(parse_state.create_option_error(ParseErrorTypeId::OptionValueCannotStartWithOptionAnnouncer))
                         } else {
                             Ok(OptionHasValueBasedOnFirstChar::Must)
                         }
@@ -967,10 +977,10 @@ impl<O: Default, P: Default> Parser<O, P> {
                     self.match_param_arg(parse_state, args)?;
                     Ok(())
                 } else {
-                    Err(parse_state.create_option_error(ParseErrorId::UnmatchedOption))
+                    Err(parse_state.create_option_error(ParseErrorTypeId::UnmatchedOption))
                 }
             } else {
-                Err(parse_state.create_option_error(ParseErrorId::UnmatchedOption))
+                Err(parse_state.create_option_error(ParseErrorTypeId::UnmatchedOption))
             }
         }
     }
@@ -1010,8 +1020,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn try_match_option(&self, parse_state: &ParseState, has_value: bool, matcher: &Matcher<O, P>) -> bool {
         if  self.try_match_option_excluding_value(parse_state, matcher) {
             // want to match value
-            let unwrapped_matcher_option_has_value = matcher.option_has_value().as_ref().unwrap_or(&DEFAULT_OPTION_HAS_VALUE);
-            match *unwrapped_matcher_option_has_value {
+            match *matcher.option_has_value() {
                 OptionHasValue::Always => {
                     // matcher expects value
                     //
@@ -1062,7 +1071,7 @@ impl<O: Default, P: Default> Parser<O, P> {
                 self.add_param_arg(parse_state, matcher, args);
                 Ok(())
             } else {
-                Err(parse_state.create_param_error(ParseErrorId::UnmatchedParam))
+                Err(parse_state.create_param_error(ParseErrorTypeId::UnmatchedParam))
             }
         }
     }
@@ -1109,7 +1118,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn try_match_option_excluding_value(&self, parse_state: &ParseState, matcher: &Matcher<O, P>) -> bool {
         self.try_match_index(&parse_state.arg_count, matcher.arg_indices())
         &&
-        self.try_match_arg_type(MatchArgType::Option, matcher.arg_type())
+        self.try_match_arg_type(MatchArgTypeId::Option, matcher.arg_type())
         &&
         self.try_match_index(&parse_state.option_count, matcher.option_indices())
         &&
@@ -1119,7 +1128,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     fn try_match_param(&self, parse_state: &ParseState, matcher: &Matcher<O, P>) -> bool {
         self.try_match_index(&parse_state.arg_count, matcher.arg_indices())
         &&
-        self.try_match_arg_type(MatchArgType::Param, matcher.arg_type())
+        self.try_match_arg_type(MatchArgTypeId::Param, matcher.arg_type())
         &&
         self.try_match_index(&parse_state.param_count, matcher.param_indices())
         &&
@@ -1134,7 +1143,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
     }
 
-    fn try_match_arg_type(&self, value: MatchArgType, matcher_value: &Option<MatchArgType>) -> bool {
+    fn try_match_arg_type(&self, value: MatchArgTypeId, matcher_value: &Option<MatchArgTypeId>) -> bool {
         if let Some(unwrapped_matcher_value) = matcher_value {
             *unwrapped_matcher_value == value 
         } else {

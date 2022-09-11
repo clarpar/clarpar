@@ -46,19 +46,19 @@
 //!parser
 //!    .push_new_option_matcher("optionA")
 //!        .set_option_tag(OptionEnum::A)
-//!        .some_option_codes(&[RegexOrText::new_text("a")]);
+//!        .some_option_codes(&[RegexOrText::with_text("a")]);
 //! 
 //!parser
 //!    .push_new_option_matcher("optionB")
 //!        .set_option_tag(OptionEnum::B)
-//!        .some_option_codes(&[RegexOrText::new_text("b")])
-//!        .some_option_has_value(OptionHasValue::IfPossible);
+//!        .some_option_codes(&[RegexOrText::with_text("b")])
+//!        .set_option_has_value(OptionHasValue::IfPossible);
 //! 
 //!parser
 //!    .push_new_option_matcher("optionC")
 //!        .set_option_tag(OptionEnum::C)
-//!        .some_option_codes(&[RegexOrText::new_text("c")])
-//!        .some_option_has_value(OptionHasValue::Always);
+//!        .some_option_codes(&[RegexOrText::with_text("c")])
+//!        .set_option_has_value(OptionHasValue::Always);
 //! 
 //!parser
 //!     .push_new_param_matcher("param1")
@@ -147,19 +147,19 @@
 //!# parser
 //!#     .push_new_option_matcher("optionA")
 //!#         .set_option_tag(OptionEnum::A)
-//!#         .some_option_codes(&[RegexOrText::new_text("a")]);
+//!#         .some_option_codes(&[RegexOrText::with_text("a")]);
 //!#  
 //!# parser
 //!#     .push_new_option_matcher("optionB")
 //!#         .set_option_tag(OptionEnum::B)
-//!#         .some_option_codes(&[RegexOrText::new_text("b")])
-//!#         .some_option_has_value(OptionHasValue::IfPossible);
+//!#         .some_option_codes(&[RegexOrText::with_text("b")])
+//!#         .set_option_has_value(OptionHasValue::IfPossible);
 //!#  
 //!# parser
 //!#     .push_new_option_matcher("optionC")
 //!#         .set_option_tag(OptionEnum::C)
-//!#         .some_option_codes(&[RegexOrText::new_text("c")])
-//!#         .some_option_has_value(OptionHasValue::Always);
+//!#         .some_option_codes(&[RegexOrText::with_text("c")])
+//!#         .set_option_has_value(OptionHasValue::Always);
 //!#  
 //!# parser
 //!#      .push_new_param_matcher("param1")
@@ -242,19 +242,19 @@
 //!# parser
 //!#     .push_new_option_matcher("optionA")
 //!#         .set_option_tag(OptionEnum::A)
-//!#         .some_option_codes(&[RegexOrText::new_text("a")]);
+//!#         .some_option_codes(&[RegexOrText::with_text("a")]);
 //!#  
 //!# parser
 //!#     .push_new_option_matcher("optionB")
 //!#         .set_option_tag(OptionEnum::B)
-//!#         .some_option_codes(&[RegexOrText::new_text("b")])
-//!#         .some_option_has_value(OptionHasValue::IfPossible);
+//!#         .some_option_codes(&[RegexOrText::with_text("b")])
+//!#         .set_option_has_value(OptionHasValue::IfPossible);
 //!#  
 //!# parser
 //!#     .push_new_option_matcher("optionC")
 //!#         .set_option_tag(OptionEnum::C)
-//!#         .some_option_codes(&[RegexOrText::new_text("c")])
-//!#         .some_option_has_value(OptionHasValue::Always);
+//!#         .some_option_codes(&[RegexOrText::with_text("c")])
+//!#         .set_option_has_value(OptionHasValue::Always);
 //!#  
 //!# parser
 //!#      .push_new_param_matcher("param1")
@@ -340,19 +340,19 @@
 //!# parser
 //!#     .push_new_option_matcher("optionA")
 //!#         .set_option_tag(OptionEnum::A)
-//!#         .some_option_codes(&[RegexOrText::new_text("a")]);
+//!#         .some_option_codes(&[RegexOrText::with_text("a")]);
 //!#  
 //!# parser
 //!#     .push_new_option_matcher("optionB")
 //!#         .set_option_tag(OptionEnum::B)
-//!#         .some_option_codes(&[RegexOrText::new_text("b")])
-//!#         .some_option_has_value(OptionHasValue::IfPossible);
+//!#         .some_option_codes(&[RegexOrText::with_text("b")])
+//!#         .set_option_has_value(OptionHasValue::IfPossible);
 //!#  
 //!# parser
 //!#     .push_new_option_matcher("optionC")
 //!#         .set_option_tag(OptionEnum::C)
-//!#         .some_option_codes(&[RegexOrText::new_text("c")])
-//!#         .some_option_has_value(OptionHasValue::Always);
+//!#         .some_option_codes(&[RegexOrText::with_text("c")])
+//!#         .set_option_has_value(OptionHasValue::Always);
 //!#  
 //!# parser
 //!#      .push_new_param_matcher("param1")
@@ -437,21 +437,25 @@
 //! specifying escaping of special characters.
 //! 
 //! It also needs to be configured with a list of [matchers](Matcher). A matcher is a struct with a set of filters. The filters are used
-//! to match arguments identified by the parser. An argument only needs to meet the one filter condition in order for it to be 'matched'
+//! to match arguments identified by the parser. An argument needs to meet all filter conditions in order for it to be 'matched'
 //!
 //! When a command line is parsed, the parser will identify arguments based on its configured style.  The arguments are identified in order
 //! from start to end of the command line.  As each argument is identified, it is matched against one of the [matchers](Matcher) assigned to
-//! the parser.
+//! the parser. It is possible for an argument to match more than one matcher.  The parser will attempt to match each argument to matchers
+//! in order of matchers in the parser's matcher list. Accordingly, more specific matchers should be inserted earlier in this list.
 //! 
-//! As each argument is matched, the parser generates a corresponding [Arg](Arg) variant with details of the argument. For parameter and
+//! When an argument is matched, the parser generates a corresponding [Arg](Arg) variant with details of the argument. For parameter and
 //! option arguments, the variant is also assigned a copy of either the respective Matcher's [param_tag](Matcher::param_tag) or
 //! [option_tag](Matcher::option_tag) value.
 //! 
 //! These [Arg](Arg) variants are stored in an array (in same order as the arguments in the command line) which is returned as the success
 //! result.
 //! 
+//! All arguments must be matched. If an argument is not matched, then the user specified an unsupported parameter or option and an
+//! [unmatched parameter](ParseErrorTypeId::UnmatchedParam) or [unmatched option](ParseErrorTypeId::UnmatchedOption) will be returned.
+//! 
 //! If the parser detects an error in the command line, an error result will be returned containing a [ParseError](ParseError) struct.
-//! This struct identifies the reason for the error and where in the line the error occurred.
+//! This struct [identifies](ParseErrorTypeId) the reason for the error and where in the line the error occurred.
 //! 
 //! # Main types
 //! 
@@ -508,7 +512,7 @@
 #![allow(clippy::collapsible_else_if)]
 
 mod env_char;
-mod parse_error_id;
+mod parse_error_type_id;
 mod parse_error;
 mod regex_or_text;
 mod matcher;
@@ -517,8 +521,8 @@ mod parser;
 
 mod parse_state;
 
-pub use parse_error_id::{
-    ParseErrorId,
+pub use parse_error_type_id::{
+    ParseErrorTypeId,
 };
 
 pub use parse_error::{
@@ -534,7 +538,7 @@ pub use matcher:: {
     Matchers,
     DefaultTagType,
     OptionHasValue,
-    MatchArgType,
+    MatchArgTypeId,
     DEFAULT_OPTION_HAS_VALUE,
 };
 
