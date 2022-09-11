@@ -7,36 +7,108 @@ use crate::arg::{Arg, Args, OptionProperties, ParamProperties, BinaryProperties}
 use crate::matcher::{Matcher, Matchers, OptionHasValue, DefaultTagType, MatchArgTypeId};
 use crate::parse_state::{ParseState, ArgParseState, OptionParseState};
 
+/// Default [quote characters](Parser::quote_chars) for line parsing.
 pub const DEFAULT_LINE_QUOTE_CHARS: [char; 1] = ['"'];
+/// Default [option announcer characters](Parser::option_announcer_chars) for line parsing.
 pub const DEFAULT_LINE_OPTION_ANNOUNCER_CHARS: [char; 1] = ['-'];
+/// Default [option codes case sensitive](Parser::option_codes_case_sensitive) for line parsing.
 pub const DEFAULT_LINE_OPTION_CODES_CASE_SENSITIVE: bool = false;
+/// Default [option code can be empty](Parser::option_code_can_be_empty) for line parsing.
 pub const DEFAULT_LINE_OPTION_CODE_CAN_BE_EMPTY: bool = false;
+/// Default [multi character option code requires double announcer](Parser::multi_char_option_code_requires_double_announcer) for line parsing.
 pub const DEFAULT_LINE_MULTI_CHAR_OPTION_CODE_REQUIRES_DOUBLE_ANNOUNCER: bool = false;
+/// Default [option value announcer characters](Parser::option_value_announcer_chars) for line parsing.
 pub const DEFAULT_LINE_OPTION_VALUE_ANNOUNCER_CHARS: [char; 1] = [' '];
+/// Default [option values case sensitive](Parser::option_values_case_sensitive) for line parsing.
 pub const DEFAULT_LINE_OPTION_VALUES_CASE_SENSITIVE: bool = false;
+/// Default [parameters case sensitive](Parser::params_case_sensitive) for line parsing.
 pub const DEFAULT_LINE_PARAMS_CASE_SENSITIVE: bool = false;
+/// Default [embed quote character with double](Parser::embed_quote_char_with_double) for line parsing.
 pub const DEFAULT_LINE_EMBED_QUOTE_CHAR_WITH_DOUBLE: bool = true;
+/// Default [escape character](Parser::escape_char) for line parsing.
 pub const DEFAULT_LINE_ESCAPE_CHAR: Option<char> = None;
+/// Default [escapable logical characters](Parser::escapeable_logical_chars) for line parsing.
 pub const DEFAULT_LINE_ESCAPEABLE_LOGICAL_CHARS: [EscapeableLogicalChar; 2] = [EscapeableLogicalChar::Escape, EscapeableLogicalChar::Quote];
+/// Default [escapable characters](Parser::escapeable_chars) for line parsing.
 pub const DEFAULT_LINE_ESCAPEABLE_CHARS: [char; 0] = [];
+/// Default [parse terminate characters](Parser::parse_terminate_chars) for line parsing.
 pub const DEFAULT_LINE_PARSE_TERMINATE_CHARS: [char; 0] = [];
+/// Default [first argument is binary](Parser::first_arg_is_binary) for line parsing.
 pub const DEFAULT_LINE_FIRST_ARG_IS_BINARY: bool = true;
 
+/// Default [quote characters](Parser::quote_chars) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_QUOTE_CHARS: [char; 0] = [];
+/// Default [option announcer characters](Parser::option_announcer_chars) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_OPTION_ANNOUNCER_CHARS: [char; 1] = ['-'];
+/// Default [option codes case sensitive](Parser::option_codes_case_sensitive) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_OPTION_CODES_CASE_SENSITIVE: bool = false;
+/// Default [option code can be empty](Parser::option_code_can_be_empty) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_OPTION_CODE_CAN_BE_EMPTY: bool = false;
+/// Default [multi character option code requires double announcer](Parser::multi_char_option_code_requires_double_announcer)
+/// for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_MULTI_CHAR_OPTION_CODE_REQUIRES_DOUBLE_ANNOUNCER: bool = false;
+/// Default [option value announcer characters](Parser::option_value_announcer_chars) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_OPTION_VALUE_ANNOUNCER_CHARS: [char; 1] = [' '];
+/// Default [option values case sensitive](Parser::option_values_case_sensitive) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_OPTION_VALUES_CASE_SENSITIVE: bool = false;
+/// Default [parameters case sensitive](Parser::params_case_sensitive) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_PARAMS_CASE_SENSITIVE: bool = false;
+/// Default [embed quote character with double](Parser::embed_quote_char_with_double) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_EMBED_QUOTE_CHAR_WITH_DOUBLE: bool = false;
+/// Default [escape character](Parser::escape_char) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_ESCAPE_CHAR: Option<char> = None;
+/// Default [escapable logical characters](Parser::escapeable_logical_chars) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_ESCAPEABLE_LOGICAL_CHARS: [EscapeableLogicalChar; 2] = [EscapeableLogicalChar::Escape, EscapeableLogicalChar::Quote];
+/// Default [escapable characters](Parser::escapeable_chars) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_ESCAPEABLE_CHARS: [char; 0] = [];
+/// Default [parse terminate characters](Parser::parse_terminate_chars) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_PARSE_TERMINATE_CHARS: [char; 0] = [];
+/// Default [first argument is binary](Parser::first_arg_is_binary) for environment arguments parsing.
 pub const DEFAULT_ENV_ARGS_FIRST_ARG_IS_BINARY: bool = true;
 
+/// A Parser is used to parse a command line (or environmental arguments).  It has:
+/// * properties which define the style of the command line to be parsed,
+/// * a matchers list which specifies the kind of arguments in the command line,
+/// * parse functions which parse a command line (or environmental arguments) and return a vector of the parsed arguments.
+/// 
+/// To use the parser, configure it with the style of the command line, add matchers to cover all possible arguments that a command
+/// line can have and then use a parse function to parse a command line (or environmental arguments).
+/// 
+/// The style of a command line can configured with the following:
+/// * Parameters and option values can be quoted ([quote_chars](Self::quote_chars))
+/// * Allow quote characters to be embedded in quoted parameters and option values using double quotes
+/// ([embed_quote_char_with_double](Self::embed_quote_char_with_double))
+/// * Whether parameters are case sensitive ([params_case_sensitive](Self::params_case_sensitive))
+/// * The characters which announce an option ([option_announcer_chars](Self::option_announcer_chars))
+/// * Whether option codes with more than one character require 2 announcer characters
+/// ([multi_char_option_code_requires_double_announcer](Self::multi_char_option_code_requires_double_announcer))
+/// * Whether option codes are case sensitive ([option_codes_case_sensitive](Self::option_codes_case_sensitive))
+/// * Whether option codes can be empty strings ([option_code_can_be_empty](Self::option_code_can_be_empty))
+/// * The characters which announce an option value ([option_value_announcer_chars](Self::option_value_announcer_chars))
+/// * Whether option values are case sensitive ([option_values_case_sensitive](Self::option_values_case_sensitive))
+/// * Optionally define a character which will escape characters with special purpose ([escape_char](Self::escape_char))
+/// * Specify which which special purpose characters can be escaped ([escapeable_logical_chars](Self::escapeable_logical_chars))
+/// * Specify which literal characters can be escaped ([escapeable_chars](Self::escapeable_chars))
+/// * Whether the first argument is the binary name ([first_arg_is_binary](Self::first_arg_is_binary))
+/// * The characters which will terminate the parsing of the line early ([parse_terminate_chars](Self::parse_terminate_chars))
+///
+/// The [new](Self::new) constructor will create a Parser with base defaults that are a good starting point for parsing a command line.
+/// The [with_env_args_defaults](Self::with_env_args_defaults) constructor has base defaults for parsing environmental arguments.
+/// These defaults can also be applied with the [set_line_defaults](Self::set_line_defaults) and
+/// [set_env_args_defaults](Self::set_env_args_defaults) functions.
+/// 
+/// The following functions can be used to manage the matcher list: [matchers](Self::matchers), [push_new_matcher](Self::push_new_matcher)
+/// [push_new_option_matcher](Self::push_new_option_matcher), [push_new_param_matcher](Self::push_new_param_matcher),
+/// [push_matcher](Self::push_matcher), [delete_matcher_at](Self::delete_matcher_at), [clear_matchers](Self::clear_matchers) and
+/// [find_matcher](Self::find_matcher).
+/// 
+/// There are 3 functions for parsing a command line or environmental variables:
+/// * [parse_line](Self::parse_line) - Parses a command line
+/// * [parse_env_args](Self::parse_env_args) - Parses an environmental variables specified in a `std::env::args` iterator
+/// * [parse_env](Self::parse_env) - Parses the application's environmental variables
+/// 
+/// If parsing was successful, these 3 functions will return a vector of [parsed arguments](Args). Otherwise they will return an
+/// [ParseError](ParseError) struct detailing the type of parse error and its location in the line.
 pub struct Parser<O: Default = DefaultTagType, P: Default = DefaultTagType> {
     quote_chars: Vec<char>,
     option_announcer_chars: Vec<char>,
@@ -58,6 +130,8 @@ pub struct Parser<O: Default = DefaultTagType, P: Default = DefaultTagType> {
 }
 
 impl<O: Default, P: Default> Parser<O, P> {
+    /// Create a new Parser object with Line parsing defaults. The `O` and `P` generic parameters specify the types that
+    /// can be used to tag matchers with a value which easily enables Option and Parameter arguments to be identified.
     pub fn new() -> Self {
         Parser {
             quote_chars: DEFAULT_LINE_QUOTE_CHARS.to_vec(),
@@ -80,12 +154,16 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
     }
 
+    /// Create a new Parser object with Line parsing defaults. The `O` and `P` generic parameters specify the types that
+    /// can be used to tag matchers with a value which easily enables Option and Parameter arguments to be identified.
     pub fn with_line_defaults() -> Self {
         let mut parser = Parser::new();
         parser.set_line_defaults();
         parser
     }
 
+    /// Create a new Parser object with Environment Arguments parsing defaults. The `O` and `P` generic parameters specify the types that
+    /// can be used to tag matchers with a value which easily enables Option and Parameter arguments to be identified.
     pub fn with_env_args_defaults() -> Self {
         let mut parser = Parser::new();
         parser.set_env_args_defaults();
@@ -113,7 +191,7 @@ impl<O: Default, P: Default> Parser<O, P> {
     /// You can also use quoting to enclose text which begins with a option announcer but is not an option. See
     /// [`Matcher::option_has_value`](Matcher::option_has_value) for alternative ways of handling text beginning with the option announcer character.
     ///
-    /// Line Default: `['"']` (Array with one double quote character)
+    /// Line Default: `['"']` (Array with one double quote character)\
     /// Env args Default: `[]` (Empty array)
     pub fn quote_chars(&self) -> &[char] {
         &self.quote_chars
@@ -127,8 +205,10 @@ impl<O: Default, P: Default> Parser<O, P> {
 
     /// Get the array of characters any of which can be used to signify the start of an option argument in the command line.
     ///
-    /// Normally a command line argument which begins with one of the characters in this array will be parsed as a option. However this behaviour
-    /// can be overridden with [`Matcher.option_has_value`](Matcher::option_has_value).
+    /// A command line argument which begins with one of the characters in this array will be parsed as a option.
+    /// 
+    /// Note that the Parser can be configured to allow option values to begin with an option announcer character in some circumstances.
+    /// See [Matcher.option_value_can_start_with_option_announcer](Matcher::option_value_can_start_with_option_announcer) for more details.
     ///
     /// Default: `['-']` (Array with one dash character)
     pub fn option_announcer_chars(&self) -> &[char] {
@@ -142,28 +222,47 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
+    /// Specifies whether option codes are matched with case sensitivity.
+    /// 
+    /// Note that a [RegexOrText] object can override this setting for individual arguments
+    ///
+    /// Default: false
     pub fn option_codes_case_sensitive(&self) -> bool {
         self.option_codes_case_sensitive
     }
 
+    /// Sets [option_codes_case_sensitive](Self::option_codes_case_sensitive)
     pub fn set_option_codes_case_sensitive(&mut self, value: bool) -> &mut Self {
         self.option_codes_case_sensitive = value;
         self
     }
 
+    /// Specifies whether option codes can be a string of length zero.
+    /// 
+    /// Having empty option codes means that a standalone option announcer char is an option argument in its own right.  This could
+    /// be confusing however it is possible.
+    /// 
+    /// Default: false
     pub fn option_code_can_be_empty(&self) -> bool {
         self.option_code_can_be_empty
     }
 
+    /// Sets [option_code_can_be_empty](Self::option_code_can_be_empty)
     pub fn set_option_code_can_be_empty(&mut self, value: bool) -> &mut Self {
         self.option_code_can_be_empty = value;
         self
     }
 
+    /// Specifies whether option codes with more than one character must be announced with 2 successive option announcer characters.
+    /// 
+    /// This convention is common but not necessary.
+    /// 
+    /// Default: false
     pub fn multi_char_option_code_requires_double_announcer(&self) -> bool {
         self.multi_char_option_code_requires_double_announcer
     }
 
+    /// Sets [multi_char_option_code_requires_double_announcer](Self::multi_char_option_code_requires_double_announcer)
     pub fn set_multi_char_option_code_requires_double_announcer(&mut self, value: bool) -> &mut Self {
         self.multi_char_option_code_requires_double_announcer = value;
         self
@@ -191,74 +290,138 @@ impl<O: Default, P: Default> Parser<O, P> {
         self
     }
 
+    /// Specifies whether option values are matched with case sensitivity.
+    /// 
+    /// Note that a [RegexOrText] object can override this setting for individual arguments.
+    /// 
+    /// Default: false
     pub fn option_values_case_sensitive(&self) -> bool {
         self.option_values_case_sensitive
     }
 
+    /// Sets [option_values_case_sensitive](Self::option_values_case_sensitive)
     pub fn set_option_values_case_sensitive(&mut self, value: bool) -> &mut Self {
         self.option_values_case_sensitive = value;
         self
     }
 
+    /// Specifies whether parameters are matched with case sensitivity.
+    /// 
+    /// Note that a [RegexOrText] object can override this setting for individual arguments.
+    /// 
+    /// Default: false
     pub fn params_case_sensitive(&self) -> bool {
         self.params_case_sensitive
     }
 
+    /// Sets [params_case_sensitive](Self::params_case_sensitive)
     pub fn set_params_case_sensitive(&mut self, value: bool) -> &mut Self {
         self.params_case_sensitive = value;
         self
     }
 
+    /// Specifies whether quote characters can be embedded in a quoted parameter or option value by using double quotes.
+    /// 
+    /// If true, two successive quote characters in quoted text will be treated as one embedded quote character within
+    /// the text.
+    /// 
+    /// Line Default: true\
+    /// Env args Default: false
     pub fn embed_quote_char_with_double(&self) -> bool {
         self.embed_quote_char_with_double
     }
 
+    /// Set [embed_quote_char_with_double](Self::embed_quote_char_with_double)
     pub fn set_embed_quote_char_with_double(&mut self, value: bool) -> &mut Self {
         self.embed_quote_char_with_double = value;
         self
     }
 
+    /// The escape character within a parameter or option value, signifies that the subsequent character should be
+    /// treated as a literal character and not have a special purpose.
+    /// 
+    /// Some characters have special purposes in the command line. For example, a quote character normally specifies
+    /// the start or end of the parameter/option value. To embed it within this quoted value, a user can place
+    /// an escape character before it. The quote character will then be treated as a literal character and not
+    /// as the character used to quote a string.
+    /// 
+    /// Only characters specified by [escapeable_logical_chars](Self::escapeable_logical_chars) or
+    /// [escapeable_chars](Self::escapeable_chars) can be escaped. A parsing error will be returned if the command
+    /// line attempts to escape any other character.
+    /// 
+    /// Note that if escaping is enabled, it is recommended that the `Escape` logical character itself also be escaped.
+    /// That allows a user to include the escape character as a literal in a parameter or option value.
+    ///
+    /// Default: `None` (no escaping of characters)
     pub fn escape_char(&self) -> &Option<char> {
         &self.escape_char
     }
 
+    /// Set [escape_char](Self::escape_char).
     pub fn set_escape_char(&mut self, value: Option<char>) -> &mut Self {
         self.escape_char = value;
         self
     }
 
+    /// Set [escape_char](Self::escape_char).
     pub fn some_escape_char(&mut self, value: char) -> &mut Self {
         self.escape_char = Some(value);
         self
     }
 
+    /// Set [escape_char](Self::escape_char) to `None` which disables character escaping.
     pub fn none_escape_char(&mut self) -> &mut Self {
         self.escape_char = None;
         self
     }
 
+    /// The array of [logical characters](EscapeableLogicalChar) which the command line can escape.
+    /// 
+    /// Default: [[EscapeableLogicalChar::Escape](EscapeableLogicalChar::Escape),
+    /// [EscapeableLogicalChar::Quote](EscapeableLogicalChar::Quote)]
     pub fn escapeable_logical_chars(&self) -> &[EscapeableLogicalChar] {
         &self.escapeable_logical_chars
     }
 
+    /// Set [escapeable_logical_chars](Self::escapeable_logical_chars)
     pub fn set_escapeable_logical_chars(&mut self, value: &[EscapeableLogicalChar]) -> &mut Self {
         self.escapeable_logical_chars = Vec::from(value);
         self
     }
 
+    /// The array of literal characters which the command line can escape.
+    /// 
+    /// Normally, a character which is not a special purpose character does not need to be escaped. Accordingly,
+    /// this property would generally be left as an empty array.
+    /// 
+    /// Default: []
     pub fn escapeable_chars(&self) -> &[char] {
         &self.escapeable_chars
     }
 
+    /// Set [escapeable_chars](Self::escapeable_chars)
     pub fn set_escapeable_chars(&mut self, value: &[char]) -> &mut Self {
         self.escapeable_chars = Vec::from(value);
         self
     }
 
+    /// Whether the first argument should be interpretted as the binary's name.
+    /// 
+    /// Operating systems and shells traditionally insert the name or path of a binary as the first parameter of a
+    /// command line (or environmental arguments) passed to an application. When this property is true,
+    /// the parser will treat the first parameter accordingly.
+    /// 
+    /// However if an application internal command is parsed then the first parameter will most likely not
+    /// be the binary name. This property can be set to false so the first parameter is treated like all other
+    /// parameters.
+    /// 
+    /// Note that for security purposes, if the operating system inserts the first argument, it should not be relied
+    /// upon to be the binary path.  It is possible for arbitrary text to be passed as the first parameter.
     pub fn first_arg_is_binary(&self) -> bool {
         self.first_arg_is_binary
     }
 
+    /// Set [first_arg_is_binary](Self::first_arg_is_binary)
     pub fn set_first_arg_is_binary(&mut self, value: bool) -> &mut Self {
         self.first_arg_is_binary = value;
         self
@@ -275,8 +438,7 @@ impl<O: Default, P: Default> Parser<O, P> {
         &self.parse_terminate_chars
     }
 
-    /// Set the array of characters which terminate the parsing of arguments in the command line. See
-    /// [Parser::parse_terminate_chars](Parser::parse_terminate_chars) for more details.
+    /// Set [parse_terminate_chars](Self::parse_terminate_chars)
     pub fn set_parse_terminate_chars(&mut self, value: &[char]) -> &mut Self {
         self.parse_terminate_chars = Vec::from(value);
         self
@@ -286,6 +448,7 @@ impl<O: Default, P: Default> Parser<O, P> {
 
 impl<O: Default, P: Default> Parser<O, P> {
 
+    /// Set Parser properties to their default values for parsing a command line.
     pub fn set_line_defaults(&mut self) {
         self
             .set_quote_chars(&DEFAULT_LINE_QUOTE_CHARS)
@@ -304,6 +467,7 @@ impl<O: Default, P: Default> Parser<O, P> {
             .set_first_arg_is_binary(DEFAULT_LINE_FIRST_ARG_IS_BINARY);
     }
 
+    /// Set Parser properties to their default values for parsing environmental arguments.
     pub fn set_env_args_defaults(&mut self) {
         self
             .set_quote_chars(&DEFAULT_ENV_ARGS_QUOTE_CHARS)
@@ -322,25 +486,32 @@ impl<O: Default, P: Default> Parser<O, P> {
             .set_first_arg_is_binary(DEFAULT_ENV_ARGS_FIRST_ARG_IS_BINARY);
     }
 
+    /// The array of [matchers](Matcher) registered with the Parser.
     pub fn matchers(&self) -> &Matchers<O, P> {
         &self.matchers
     }
 
+    /// Create and return a new [matcher](Matcher) which has been added to the end of the Parser's list of matchers.
     pub fn push_new_matcher(&mut self, name: &str) -> &mut Matcher<O, P> {
         let matcher: Matcher<O, P> = Matcher::new(name);
         self.push_matcher(matcher)
     }
 
+    /// Create and return a new [matcher](Matcher) for option arguments.  The matcher has been added to the end of the Parser's
+    /// list of matchers.
     pub fn push_new_option_matcher(&mut self, name: &str) -> &mut Matcher<O, P> {
         let matcher: Matcher<O, P> = Matcher::new_option(name);
         self.push_matcher(matcher)
     }
 
+    /// Create and return a new [matcher](Matcher) for parameter arguments.  The matcher has been added to the end of the Parser's
+    /// list of matchers.
     pub fn push_new_param_matcher(&mut self, name: &str) -> &mut Matcher<O, P> {
         let matcher: Matcher<O, P> = Matcher::new_param(name);
         self.push_matcher(matcher)
     }
 
+    /// Add a supplied [matcher](Matcher) to the end of the Parser's list of matchers. The Parser will take ownership of this matcher.
     pub fn push_matcher(&mut self, mut matcher: Matcher<O, P>) -> &mut Matcher<O, P> {
         let index = self.matchers.len();
         matcher.set_index(index);
@@ -348,6 +519,9 @@ impl<O: Default, P: Default> Parser<O, P> {
         &mut self.matchers[index]
     }
 
+    /// Delete the first [matcher](Matcher) in the list whose name equals the value of the `name` parameter.
+    /// 
+    /// Returns true if a matcher was deleted otherwise returns false.
     pub fn delete_matcher(&mut self, name: &str) -> bool {
         if let Some(matcher) = self.find_matcher(name) {
             let idx = matcher.index();
@@ -358,22 +532,35 @@ impl<O: Default, P: Default> Parser<O, P> {
         }
     }
 
+    /// Delete the [matcher](Matcher) at the position in the list specified by the `index` parameter.
     pub fn delete_matcher_at(&mut self, index: usize) {
         self.matchers.remove(index);
     }
 
+    /// Delete all [matcher](Matcher)s from the Parser's list of matchers.
     pub fn clear_matchers(&mut self) {
         self.matchers.clear();
     }
 
+    /// Find and return the first [matcher](Matcher) in the list whose name equals the value of the `name` parameter.
+    /// 
+    /// Returns a reference to the matcher in an option if found.  Otherwise return `None`.
     pub fn find_matcher(&self, name: &str) -> Option<&Matcher<O, P>> {
         self.matchers.iter().find(|&matcher| matcher.name() == name)
     }
 
+    /// Parse this applications environmental arguments.
+    /// 
+    /// If successful, returns a success result holding an array of the parsed arguments. Otherwise return an error result
+    /// containing a [ParseError](ParseError) struct which holds the error details.
     pub fn parse_env(&self) -> Result<Args<O, P>, ParseError> {
         self.parse_env_args(env::args())
     }
 
+    /// Parse the environmental arguments passed in the `env_args` parameter.
+    /// 
+    /// If successful, returns a success result holding an array of the [parsed arguments](Args). Otherwise return an error result
+    /// containing a [ParseError](ParseError) struct which holds the error details.
     pub fn parse_env_args(&self, env_args: env::Args) -> Result<Args<O, P>, ParseError> {
         let mut args = Vec::new();
         let mut parse_state = ParseState::new(
@@ -422,6 +609,10 @@ impl<O: Default, P: Default> Parser<O, P> {
         Ok(args)
     }
 
+    /// Parse a command line.
+    /// 
+    /// If successful, returns a success result holding an array of the [parsed arguments](Args). Otherwise return an error result
+    /// containing a [ParseError](ParseError) struct which holds the error details.
     pub fn parse_line(&self, line: &str) -> Result<Args<O, P>, ParseError> {
         let mut args = Vec::new();
 
@@ -1173,13 +1364,21 @@ impl<O: Default, P: Default> Parser<O, P> {
     }
 }
 
+/// A logical character is either a group of characters (eg whitespace characters) or a special purpose
+/// character which is configured by the parser (eg Quote character).
 #[derive(Clone)]
 pub enum EscapeableLogicalChar {
+    /// Escape character.
     Escape,
+    /// Quote character.
     Quote,
+    /// Any whitespace character.
     Whitespace,
+    /// Option announcer character.
     OptionAnnouncer,
+    /// Option value announcer character.
     OptionValueAnnouncer,
+    /// Any character.
     All,
 }
 

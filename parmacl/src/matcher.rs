@@ -1,6 +1,6 @@
 use crate::regex_or_text::{RegexOrText};
 
-/// The type that arguments will be tagged with if a [Parser](crate::Parser) is not declared with a `O` or `P` generic type.
+/// The type that arguments will be tagged with if a [Parser](crate::Parser) is not declared with a `O` or `P` generic parameter.
 pub type DefaultTagType = usize;
 
 /// Specifies how a matcher determines whether an option includes a value.

@@ -1,4 +1,4 @@
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 //! A command line parser for Rust
 //! 
 //! The primary purpose of this library is to parse a full command line. That is, a string containing the complete command line.
@@ -15,11 +15,11 @@
 //! Follow the steps below to parse a command line:
 //! 1. Create an enum with one variant for each type of option argument expected in the command line.
 //! 1. Create an enum with one variant for each type of parameter argument expected in the command line.
-//! 1. Create an instance of `parmacl::Parser`.
+//! 1. Create an instance of [parmacl::Parser](Parser).
 //! 1. If necessary, set relevant properties of the Parser instance to reflect the style of the command line.
-//! 1. Add a matcher for all possible arguments to the parser. Tag each matcher with the appropriate enum.
-//! 1. Call `Parser.parse_line(command_line)` which will parse the command line and return a result containing either an array of arguments or
-//! an error.
+//! 1. Add a [matcher](Matcher) for all possible arguments to the parser. Tag each matcher with the appropriate enum.
+//! 1. Call [Parser.parse_line(command_line)](Parser::parse_line) which will parse the command line and return a result containing
+//! either a [vector of parsed arguments](Args) or an error.
 //! 1. Loop through returned arguments and process each. The arguments are ordered by appearance in the command line.
 //! 
 //! ## Example
