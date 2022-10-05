@@ -5,3 +5,12 @@ members = [
     "parmacl_env_args_tests",
 ]
 
+[workspace.package]
+edition = "2021"
+description = "A command line text parser. Parses a full command line string which has not already been pre-parsed into arguments by a shell."
+readme = "./readme.md"
+homepage = "https://github.com/parmacl/parmacl"
+repository = "https://github.com/parmacl/parmacl"
+license = "ISC"
+keywords = ["command", "line", "parser"]
+categories = ["command-line-interface"]
